@@ -25,7 +25,17 @@ export const docxConverter = converter(
       { buffer },
       { styleMap: ctx.opts.styleMap ? [ctx.opts.styleMap] : undefined },
     );
-    const { markdown, title } = htmlToMarkdown(result.value, ctx.opts);
+    let { markdown, title } = htmlToMarkdown(result.value, ctx.opts);
+
+    // mammoth-js escapes backslashes in text content, which double-escapes
+    // LaTeX commands inserted by OMML preprocessing. Fix by un-escaping
+    // backslashes within LaTeX delimiters ($...$ and $$...$$).
+    markdown = markdown.replace(
+      /(\${1,2})((?:(?!\1).)+)\1/g,
+      (_match, delim: string, body: string) =>
+        delim + body.replace(/\\\\/g, "\\") + delim,
+    );
+
     return { markdown, title };
   },
 );

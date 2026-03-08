@@ -90,6 +90,28 @@ function createTurndownService(opts?: ConvertOptions): TurndownService {
     },
   });
 
+  // Custom rule: definition lists (used by mammoth for DOCX comments)
+  td.addRule("definitionList", {
+    filter: "dl",
+    replacement(content) {
+      return "\n\n" + content + "\n\n";
+    },
+  });
+
+  td.addRule("definitionTerm", {
+    filter: "dt",
+    replacement(content) {
+      return "\n" + content + "\n";
+    },
+  });
+
+  td.addRule("definitionDescription", {
+    filter: "dd",
+    replacement(content) {
+      return ":   " + content.trim() + "\n";
+    },
+  });
+
   // Custom rule: convert checkboxes
   td.addRule("checkboxes", {
     filter(node) {
@@ -123,8 +145,43 @@ export function htmlToMarkdown(
   const body = $("body");
   const contentHtml = body.length > 0 ? body.html() || "" : $.html() || "";
 
+  // Strip <p> wrappers inside table cells to avoid multi-line cell content
+  let processedHtml = contentHtml.replace(
+    /<(td|th)\b([^>]*)>([\s\S]*?)<\/(td|th)>/gi,
+    (_m, tag: string, attrs: string, inner: string, closeTag: string) => {
+      // Replace <p>...</p> with just the text content, separated by spaces
+      const stripped = inner
+        .replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, "$1 ")
+        .trim();
+      return `<${tag}${attrs}>${stripped}</${closeTag}>`;
+    },
+  );
+
+  // Promote first <tr> to <thead><tr><th> if missing, so Turndown GFM tables work
+  processedHtml = processedHtml.replace(
+    /<table[^>]*>([\s\S]*?)<\/table>/gi,
+    (fullMatch, inner: string) => {
+      // Skip if already has <thead>
+      if (/<thead/i.test(inner)) return fullMatch;
+      const firstRowMatch = inner.match(
+        /^(\s*(?:<tbody>\s*)?)<tr[^>]*>([\s\S]*?)<\/tr>/i,
+      );
+      if (!firstRowMatch) return fullMatch;
+      const prefix = firstRowMatch[1];
+      const headerCells = firstRowMatch[2];
+      const rest = inner.slice(firstRowMatch[0].length);
+      const thCells = headerCells.replace(
+        /<td\b[^>]*>([\s\S]*?)<\/td>/gi,
+        "<th>$1</th>",
+      );
+      const cleanPrefix = prefix.replace(/<tbody>\s*/i, "");
+      const restWithTbody = /<tbody/i.test(rest) ? rest : `<tbody>${rest}`;
+      return `<table>${cleanPrefix}<thead><tr>${thCells}</tr></thead>${restWithTbody}</table>`;
+    },
+  );
+
   const td = createTurndownService(opts);
-  let markdown = td.turndown(contentHtml);
+  let markdown = td.turndown(processedHtml);
 
   // Trim leading/trailing whitespace
   markdown = markdown.trim();
