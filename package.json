@@ -1,0 +1,33 @@
+{
+  "name": "markitdown-typescript",
+  "version": "0.1.0",
+  "description": "A TypeScript port of Microsoft's markitdown Python library — converts documents to Markdown",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cfb": "^1.2.2",
+    "cheerio": "^1.2.0",
+    "fast-xml-parser": "^5.4.2",
+    "file-type": "^19.6.0",
+    "iconv-lite": "^0.6.3",
+    "jszip": "^3.10.1",
+    "mammoth": "^1.11.0",
+    "pdf-parse": "^2.4.5",
+    "turndown": "^7.2.2",
+    "turndown-plugin-gfm": "^1.0.2",
+    "xlsx": "^0.18.5",
+    "zod": "^4.0.0-beta.20250505"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/turndown": "^5.0.6",
+    "typescript": "^5.7.0"
+  },
+  "license": "MIT"
+}
