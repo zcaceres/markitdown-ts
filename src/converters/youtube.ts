@@ -21,6 +21,42 @@ function findKey(obj: any, key: string): any {
   return undefined;
 }
 
+function extractVideoId(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    return parsed.searchParams.get("v");
+  } catch {
+    return null;
+  }
+}
+
+async function fetchTranscript(videoId: string): Promise<string | null> {
+  try {
+    const { YoutubeTranscript } = await import("youtube-transcript");
+
+    // Retry logic: 3 retries, 2s delay
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const parts = await YoutubeTranscript.fetchTranscript(videoId);
+        if (parts && parts.length > 0) {
+          return parts.map((p) => p.text).join(" ");
+        }
+        return null;
+      } catch (e) {
+        if (attempt < 2) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        } else {
+          throw e;
+        }
+      }
+    }
+    return null;
+  } catch {
+    // youtube-transcript not available or transcript fetch failed
+    return null;
+  }
+}
+
 export const youtubeConverter = converter(
   "YouTube",
   allOf(
@@ -81,6 +117,15 @@ export const youtubeConverter = converter(
 
     const description = metadata["description"] || metadata["og:description"];
     if (description) md += `\n### Description\n${description}\n`;
+
+    // Fetch transcript if video ID available
+    const videoId = ctx.info.url ? extractVideoId(ctx.info.url) : null;
+    if (videoId) {
+      const transcript = await fetchTranscript(videoId);
+      if (transcript) {
+        md += `\n### Transcript\n${transcript}\n`;
+      }
+    }
 
     return { markdown: md, title: title || undefined };
   },

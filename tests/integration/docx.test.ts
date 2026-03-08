@@ -35,4 +35,29 @@ describe("DOCX converter", () => {
     );
     expect(result.markdown).not.toContain("data:image/png;base64...");
   });
+
+  test("converts equations.docx with inline LaTeX", async () => {
+    const md = createMarkItDown();
+    const result = await md.convert(path.join(FIXTURES, "equations.docx"));
+    // Should contain inline math markers
+    expect(result.markdown).toContain("$");
+    // Should contain specific equation content like m=1
+    expect(result.markdown).toMatch(/\$.*m.*=.*1.*\$/);
+  });
+
+  test("converts equations.docx with block LaTeX", async () => {
+    const md = createMarkItDown();
+    const result = await md.convert(path.join(FIXTURES, "equations.docx"));
+    // Should contain block math markers $$...$$
+    expect(result.markdown).toMatch(/\$\$.*\$\$/);
+  });
+
+  test("converts test_with_comment.docx with styleMap", async () => {
+    const md = createMarkItDown({ styleMap: "comment-reference => " });
+    const result = await md.convert(
+      path.join(FIXTURES, "test_with_comment.docx"),
+    );
+    // Should contain the comment text
+    expect(result.markdown).toContain("This is a test comment. 12df-321a");
+  });
 });

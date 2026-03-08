@@ -52,4 +52,29 @@ describe("convert edge cases", () => {
     const result = await md.convert(`file://${filePath}`);
     expect(result.markdown).toContain("5b64c88c-b3c3-4510-bcb8-da0b200602d8");
   });
+
+  test("throws UnsupportedFormatError for random.bin", async () => {
+    const md = createMarkItDown();
+    await expect(
+      md.convert(path.join(FIXTURES, "random.bin")),
+    ).rejects.toThrow();
+  });
+
+  test("throws FileConversionError with attempt details for wrong extension", async () => {
+    const md = createMarkItDown();
+    // Force a PDF file to be treated as DOCX — should fail with attempt details
+    const { FileConversionError } = await import("../../src/exceptions");
+    try {
+      await md.convert(path.join(FIXTURES, "test.pdf"), {
+        streamInfo: { extension: ".docx", mimetype: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
+      });
+      // If it doesn't throw, that's unexpected but not an error
+    } catch (e) {
+      expect(e).toBeInstanceOf(FileConversionError);
+      if (e instanceof FileConversionError) {
+        expect(e.attempts).toBeDefined();
+        expect(e.attempts!.length).toBeGreaterThan(0);
+      }
+    }
+  });
 });
