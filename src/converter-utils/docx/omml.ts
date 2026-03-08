@@ -35,18 +35,26 @@ import {
 export const OMML_NS = "http://schemas.openxmlformats.org/officeDocument/2006/math";
 const OMML_NS_BRACE = `{${OMML_NS}}`;
 
-/** Simple template substitution: replaces {key} with values */
+/**
+ * Python-style template substitution.
+ * Templates use Python format syntax: {var} for variables, {{ and }} for literal braces.
+ * e.g. "\\frac{{{num}}}{{{den}}}" with {num:"a", den:"b"} → "\\frac{a}{b}"
+ */
 function tpl(template: string, vars: Record<string, string>): string {
   let result = template;
   for (const [key, value] of Object.entries(vars)) {
     result = result.replace(new RegExp(`\\{${key}\\}`, "g"), value);
   }
+  // Collapse Python-style escaped braces: {{ → {, }} → }
+  result = result.replace(/\{\{/g, "{").replace(/\}\}/g, "}");
   return result;
 }
 
-/** Replace {0} placeholder in template */
+/** Replace {0} placeholder in template, then collapse escaped braces */
 function tpl0(template: string, value: string): string {
-  return template.replace(/\{0\}/g, value);
+  let result = template.replace(/\{0\}/g, value);
+  result = result.replace(/\{\{/g, "{").replace(/\}\}/g, "}");
+  return result;
 }
 
 function escapeLatex(strs: string): string {

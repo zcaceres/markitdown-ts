@@ -21,8 +21,35 @@ function sheetsToMarkdown(workbook: XLSX.WorkBook): string {
 
     parts.push(`## ${sheetName}`);
 
-    // Convert sheet to HTML and then to markdown
-    const html = XLSX.utils.sheet_to_html(sheet);
+    // Convert sheet to HTML, then fix table structure for Turndown GFM tables
+    let html = XLSX.utils.sheet_to_html(sheet);
+
+    // SheetJS outputs <table><tr><td>...</td></tr>... without <thead>/<th>.
+    // Turndown's GFM tables plugin requires <thead>+<th> to produce markdown tables.
+    // Promote the first <tr> of each <table> to <thead><tr><th>...</th></tr></thead>.
+    html = html.replace(
+      /<table>([\s\S]*?)<\/table>/g,
+      (_match, inner: string) => {
+        const firstRowMatch = inner.match(
+          /^(\s*(?:<tbody>\s*)?)<tr>([\s\S]*?)<\/tr>/,
+        );
+        if (!firstRowMatch) return _match;
+
+        const prefix = firstRowMatch[1]; // may include <tbody>
+        const headerCells = firstRowMatch[2];
+        const rest = inner.slice(firstRowMatch[0].length);
+
+        // Convert <td> to <th> in the header row
+        const thCells = headerCells.replace(/<td\b[^>]*>([\s\S]*?)<\/td>/g, "<th>$1</th>");
+
+        // Strip any <tbody> that was before the first row
+        const cleanPrefix = prefix.replace(/<tbody>\s*/, "");
+        const restWithTbody = rest.includes("<tbody>") ? rest : `<tbody>${rest}`;
+
+        return `<table>${cleanPrefix}<thead><tr>${thCells}</tr></thead>${restWithTbody}</table>`;
+      },
+    );
+
     const { markdown } = htmlToMarkdown(html);
     parts.push(markdown.trim());
     parts.push("");
