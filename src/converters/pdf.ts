@@ -332,19 +332,13 @@ export const pdfConverter = converter(
 
       let markdown: string;
       if (plainPages > formPages && plainPages > 0) {
-        const allText: string[] = [];
-        for (let i = 0; i < pdf.pageCount; i++) {
-          const page = pdf.page(i);
-          const text = page.extractText();
-          if (text && text.trim()) allText.push(text.trim());
-          page.free();
-        }
-        markdown = allText.join("\n\n");
+        // Use pdf-parse for plain text pages (better word spacing, like Python's pdfminer)
+        pdf.free();
+        markdown = await fallbackPdfParse(ctx.buffer);
       } else {
+        pdf.free();
         markdown = markdownChunks.join("\n\n").trim();
       }
-
-      pdf.free();
 
       if (!markdown.trim()) {
         markdown = await fallbackPdfParse(ctx.buffer);

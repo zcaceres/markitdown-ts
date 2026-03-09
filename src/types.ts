@@ -23,5 +23,6 @@ export const ConvertOptionsSchema = z.object({
   exiftoolPath: z.string().optional(),
   styleMap: z.string().optional(),
   keepDataUris: z.boolean().optional(),
+  youtubeTranscriptLanguages: z.array(z.string()).optional(),
 });
 export type ConvertOptions = z.infer<typeof ConvertOptionsSchema>;
