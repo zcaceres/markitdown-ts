@@ -8,10 +8,17 @@
   "bin": {
     "markitdown": "dist/cli.js"
   },
+  "files": [
+    "dist",
+    "package.json",
+    "LICENSE"
+  ],
   "scripts": {
-    "build": "bun build src/index.ts src/cli.ts --outdir dist --target node",
+    "build": "bun build src/index.ts src/cli.ts --outdir dist --target node --packages external",
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "publish:dry": "./scripts/publish.sh --dry-run",
+    "publish:npm": "./scripts/publish.sh"
   },
   "dependencies": {
     "cfb": "^1.2.2",
