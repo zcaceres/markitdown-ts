@@ -87,6 +87,33 @@ describe("stream input with minimal hints", () => {
 });
 
 // ============================================================
+// Binary detection without hints
+// ============================================================
+
+describe("binary detection without hints", () => {
+  test("detects DOCX from magic bytes alone", async () => {
+    const md = createMarkItDown();
+    const buffer = fs.readFileSync(path.join(FIXTURES, "test.docx"));
+    const result = await md.convert(buffer);
+    expect(result.markdown).toContain("314b0a30-5b04-470b-b9f7-eed2c2bec74a");
+  });
+
+  test("detects PDF from magic bytes alone", async () => {
+    const md = createMarkItDown();
+    const buffer = fs.readFileSync(path.join(FIXTURES, "test.pdf"));
+    const result = await md.convert(buffer);
+    expect(result.markdown.length).toBeGreaterThan(0);
+  });
+
+  test("detects XLSX from magic bytes alone", async () => {
+    const md = createMarkItDown();
+    const buffer = fs.readFileSync(path.join(FIXTURES, "test.xlsx"));
+    const result = await md.convert(buffer);
+    expect(result.markdown).toContain("6ff4173b-42a5-4784-9b19-f49caff4d93d");
+  });
+});
+
+// ============================================================
 // Convert edge cases
 // ============================================================
 

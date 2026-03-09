@@ -2,7 +2,6 @@ import { describe, test, expect } from "bun:test";
 import path from "node:path";
 import fs from "node:fs";
 import { createMarkItDown } from "../../src/markitdown";
-import { exiftoolMetadata } from "../../src/converters/exiftool";
 
 const FIXTURES = path.join(import.meta.dir, "../fixtures");
 
@@ -16,27 +15,22 @@ async function hasExiftool(): Promise<boolean> {
   }
 }
 
-describe("Image converter", () => {
-  test("converts image file (no exiftool)", async () => {
+describe("Audio converter", () => {
+  test("converts mp3 file without exiftool (no crash)", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(path.join(FIXTURES, "test.jpg"));
+    const result = await md.convert(path.join(FIXTURES, "test.mp3"));
     expect(result).toBeDefined();
     expect(typeof result.markdown).toBe("string");
   });
 
-  test("accepts image buffer with mimetype", async () => {
+  test("converts mp3 buffer with mimetype hint", async () => {
     const md = createMarkItDown();
-    const buffer = fs.readFileSync(path.join(FIXTURES, "test.jpg"));
+    const buffer = fs.readFileSync(path.join(FIXTURES, "test.mp3"));
     const result = await md.convert(buffer, {
-      streamInfo: { mimetype: "image/jpeg" },
+      streamInfo: { mimetype: "audio/mpeg" },
     });
     expect(result).toBeDefined();
-  });
-
-  test("output has no [object Object] artifacts", async () => {
-    const md = createMarkItDown();
-    const result = await md.convert(path.join(FIXTURES, "test.jpg"));
-    expect(result.markdown).not.toContain("[object Object]");
+    expect(typeof result.markdown).toBe("string");
   });
 
   test("with exiftool extracts metadata", async () => {
@@ -46,8 +40,7 @@ describe("Image converter", () => {
       return;
     }
     const md = createMarkItDown({ exiftoolPath: "exiftool" });
-    const result = await md.convert(path.join(FIXTURES, "test.jpg"));
-    // Exiftool should produce some metadata output
+    const result = await md.convert(path.join(FIXTURES, "test.mp3"));
     expect(result.markdown.length).toBeGreaterThan(0);
   });
 });

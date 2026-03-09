@@ -5,8 +5,11 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "markitdown": "dist/cli.js"
+  },
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node",
+    "build": "bun build src/index.ts src/cli.ts --outdir dist --target node",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },

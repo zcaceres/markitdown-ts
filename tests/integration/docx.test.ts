@@ -59,6 +59,7 @@ describe("DOCX converter", () => {
     );
     // Should contain the comment text
     expect(result.markdown).toContain("This is a test comment. 12df-321a");
+    expect(result.markdown).toContain("55yiyi-asd09");
   });
 });
 

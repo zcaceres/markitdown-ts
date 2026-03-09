@@ -177,6 +177,14 @@ describe("HTML stress tests", () => {
     expect(result.markdown).toContain("Alice");
   });
 
+  test("leading whitespace HTML is handled", async () => {
+    const result = await md.convert(
+      Buffer.from("   \n\n\n<html><body><p>content</p></body></html>"),
+      { streamInfo: { extension: ".html", mimetype: "text/html" } },
+    );
+    expect(result.markdown).toContain("content");
+  });
+
   test("HTML with data URIs are truncated by default", async () => {
     const html = `<html><body><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" /></body></html>`;
     const result = await md.convert(Buffer.from(html), {

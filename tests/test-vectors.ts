@@ -227,6 +227,22 @@ export const GENERAL_TEST_VECTORS: FileTestVector[] = [
     ],
     mustNotInclude: [],
   },
+  {
+    filename: "test.jpg",
+    mimetype: "image/jpeg",
+    charset: null,
+    url: null,
+    mustInclude: [],
+    mustNotInclude: [],
+  },
+  {
+    filename: "test.mp3",
+    mimetype: "audio/mpeg",
+    charset: null,
+    url: null,
+    mustInclude: [],
+    mustNotInclude: [],
+  },
 ];
 
 // Subset relevant to Phase 1
