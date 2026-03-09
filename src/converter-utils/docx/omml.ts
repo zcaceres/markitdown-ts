@@ -155,7 +155,8 @@ function parseOmmlXml(xmlStr: string): XmlNode {
     attributeNamePrefix: "",
     preserveOrder: true,
     processEntities: false,
-    trimValues: true,
+    trimValues: false,
+    parseTagValue: false,
   });
 
   const parsed = parser.parse(xmlStr);
