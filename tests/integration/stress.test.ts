@@ -457,6 +457,28 @@ describe("Error handling stress tests", () => {
     // @ts-expect-error — testing runtime behavior
     await expect(md.convert(undefined)).rejects.toThrow();
   });
+
+  test("FileConversionError.attempts has converterName and error fields", async () => {
+    try {
+      await md.convert(path.join(FIXTURES, "test.pdf"), {
+        streamInfo: {
+          extension: ".docx",
+          mimetype: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        },
+      });
+    } catch (e) {
+      if (e instanceof FileConversionError) {
+        expect(e.attempts).toBeDefined();
+        expect(Array.isArray(e.attempts)).toBe(true);
+        expect(e.attempts!.length).toBeGreaterThan(0);
+        for (const attempt of e.attempts!) {
+          expect(typeof attempt.converterName).toBe("string");
+          expect(attempt.converterName.length).toBeGreaterThan(0);
+          expect(attempt.error).toBeDefined();
+        }
+      }
+    }
+  });
 });
 
 // ============================================================

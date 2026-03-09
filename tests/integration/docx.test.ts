@@ -61,3 +61,39 @@ describe("DOCX converter", () => {
     expect(result.markdown).toContain("This is a test comment. 12df-321a");
   });
 });
+
+describe("DOCX equation detailed tests", () => {
+  test("equations.docx contains specific LaTeX commands", async () => {
+    const md = createMarkItDown();
+    const result = await md.convert(path.join(FIXTURES, "equations.docx"));
+
+    // Should contain specific LaTeX commands from the physics equations
+    expect(result.markdown).toContain("\\frac");
+    expect(result.markdown).toContain("sin");
+
+    // Should contain specific numeric values from the equations
+    expect(result.markdown).toMatch(/550/);
+    expect(result.markdown).toMatch(/2\.5/);
+  });
+
+  test("equations.docx inline equations have paired delimiters", async () => {
+    const md = createMarkItDown();
+    const result = await md.convert(path.join(FIXTURES, "equations.docx"));
+
+    // Find all $ that are not $$ (inline delimiters)
+    // Replace $$ with placeholder, then count remaining $
+    const withoutBlock = result.markdown.replace(/\$\$/g, "");
+    const inlineDollars = (withoutBlock.match(/\$/g) || []).length;
+    expect(inlineDollars % 2).toBe(0);
+  });
+
+  test("test.docx has no math delimiters (no equations)", async () => {
+    const md = createMarkItDown();
+    const result = await md.convert(path.join(FIXTURES, "test.docx"));
+
+    // test.docx has no equations, so no $ math markers should appear
+    // ($ might appear in text context, so check for LaTeX-style patterns)
+    expect(result.markdown).not.toMatch(/\$\\frac/);
+    expect(result.markdown).not.toMatch(/\$\$/);
+  });
+});

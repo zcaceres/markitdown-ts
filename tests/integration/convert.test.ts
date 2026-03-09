@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import path from "node:path";
+import fs from "node:fs";
 import { createMarkItDown } from "../../src/markitdown";
 import { GENERAL_TEST_VECTORS } from "../test-vectors";
 
@@ -28,6 +29,66 @@ describe("test vector parametrized tests", () => {
     });
   }
 });
+
+// ============================================================
+// Stream input with full hints (Python: test_convert_stream_with_hints)
+// ============================================================
+
+describe("stream input with full hints", () => {
+  for (const vector of GENERAL_TEST_VECTORS) {
+    test(`buffer + full hints: ${vector.filename}`, async () => {
+      const md = createMarkItDown();
+      const buffer = fs.readFileSync(path.join(FIXTURES, vector.filename));
+      const ext = path.extname(vector.filename);
+
+      const streamInfo: any = { extension: ext };
+      if (vector.mimetype) streamInfo.mimetype = vector.mimetype;
+      if (vector.charset) streamInfo.charset = vector.charset;
+      if (vector.url) streamInfo.url = vector.url;
+
+      const result = await md.convert(buffer, { streamInfo });
+
+      for (const s of vector.mustInclude) {
+        expect(result.markdown).toContain(s);
+      }
+      for (const s of vector.mustNotInclude) {
+        expect(result.markdown).not.toContain(s);
+      }
+    });
+  }
+});
+
+// ============================================================
+// Stream input with minimal hints (Python: test_convert_stream_without_hints)
+// ============================================================
+
+describe("stream input with minimal hints", () => {
+  for (const vector of GENERAL_TEST_VECTORS) {
+    test(`buffer + extension only: ${vector.filename}`, async () => {
+      const md = createMarkItDown();
+      const buffer = fs.readFileSync(path.join(FIXTURES, vector.filename));
+      const ext = path.extname(vector.filename);
+
+      const streamInfo: any = { extension: ext };
+      // Only add charset and url when needed (some converters require them)
+      if (vector.charset) streamInfo.charset = vector.charset;
+      if (vector.url) streamInfo.url = vector.url;
+
+      const result = await md.convert(buffer, { streamInfo });
+
+      for (const s of vector.mustInclude) {
+        expect(result.markdown).toContain(s);
+      }
+      for (const s of vector.mustNotInclude) {
+        expect(result.markdown).not.toContain(s);
+      }
+    });
+  }
+});
+
+// ============================================================
+// Convert edge cases
+// ============================================================
 
 describe("convert edge cases", () => {
   test("throws UnsupportedFormatError for unknown format", async () => {
@@ -62,18 +123,26 @@ describe("convert edge cases", () => {
 
   test("throws FileConversionError with attempt details for wrong extension", async () => {
     const md = createMarkItDown();
-    // Force a PDF file to be treated as DOCX — should fail with attempt details
     const { FileConversionError } = await import("../../src/exceptions");
     try {
       await md.convert(path.join(FIXTURES, "test.pdf"), {
-        streamInfo: { extension: ".docx", mimetype: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
+        streamInfo: {
+          extension: ".docx",
+          mimetype:
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        },
       });
-      // If it doesn't throw, that's unexpected but not an error
     } catch (e) {
       expect(e).toBeInstanceOf(FileConversionError);
       if (e instanceof FileConversionError) {
         expect(e.attempts).toBeDefined();
         expect(e.attempts!.length).toBeGreaterThan(0);
+        // Validate attempt structure
+        for (const attempt of e.attempts!) {
+          expect(typeof attempt.converterName).toBe("string");
+          expect(attempt.converterName.length).toBeGreaterThan(0);
+          expect(attempt.error).toBeDefined();
+        }
       }
     }
   });
