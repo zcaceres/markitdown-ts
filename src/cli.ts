@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 import fs from "node:fs";
-import path from "node:path";
 import { createMarkItDown } from "./markitdown.js";
+import {
+  UnsupportedFormatError,
+  FileConversionError,
+} from "./exceptions.js";
 
 const VERSION = JSON.parse(
   fs.readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
@@ -60,9 +63,6 @@ async function main() {
     }
   }
 
-  let buffer: Buffer | undefined;
-  let streamInfo: Record<string, string | undefined> | undefined;
-
   if (inputFile) {
     // File path provided
     const md = createMarkItDown();
@@ -78,11 +78,24 @@ async function main() {
 
   // Check for stdin pipe
   if (!process.stdin.isTTY) {
+    const MAX_STDIN_BYTES = 500 * 1024 * 1024; // 500MB
     const chunks: Buffer[] = [];
+    let totalBytes = 0;
     for await (const chunk of process.stdin) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      totalBytes += buf.length;
+      if (totalBytes > MAX_STDIN_BYTES) {
+        process.stderr.write("Error: stdin input exceeds 500MB limit\n");
+        process.exit(1);
+      }
+      chunks.push(buf);
     }
-    buffer = Buffer.concat(chunks);
+    const buffer = Buffer.concat(chunks);
+
+    if (buffer.length === 0) {
+      process.stderr.write("Error: No input received on stdin\n");
+      process.exit(1);
+    }
 
     const md = createMarkItDown();
     try {
@@ -90,10 +103,17 @@ async function main() {
       let result;
       try {
         result = await md.convert(buffer);
-      } catch {
-        result = await md.convert(buffer, {
-          streamInfo: { charset: "utf-8" },
-        });
+      } catch (e) {
+        if (
+          e instanceof UnsupportedFormatError ||
+          e instanceof FileConversionError
+        ) {
+          result = await md.convert(buffer, {
+            streamInfo: { charset: "utf-8" },
+          });
+        } else {
+          throw e;
+        }
       }
       writeOutput(result.markdown, outputFile);
     } catch (e: any) {
