@@ -355,6 +355,7 @@ export const pdfConverter = converter(
 async function fallbackPdfParse(buffer: Buffer): Promise<string> {
   const { PDFParse } = await import("pdf-parse");
   const parser = new PDFParse(new Uint8Array(buffer));
+  // @ts-expect-error pdf-parse marks load() as private but it's the documented API
   await parser.load();
   const result = await parser.getText();
   return result.text;
