@@ -38,12 +38,42 @@ function parseCsvLine(line: string): string[] {
 }
 
 function parseCsv(text: string): string[][] {
-  const lines = text.split(/\r?\n/);
   const rows: string[][] = [];
+  let current = "";
+  let inQuotes = false;
+
+  // Split respecting quoted fields that may contain newlines
+  const lines = text.split(/\r?\n/);
   for (const line of lines) {
-    if (line.trim() === "") continue;
-    rows.push(parseCsvLine(line));
+    if (inQuotes) {
+      // Continue the previous field across the newline
+      current += "\n" + line;
+    } else {
+      if (current.trim() !== "" || rows.length > 0) {
+        if (current.trim() !== "") rows.push(parseCsvLine(current));
+      }
+      current = line;
+    }
+
+    // Count unescaped quotes to track state
+    let quotes = 0;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"') {
+        if (i + 1 < line.length && line[i + 1] === '"') {
+          i++; // skip escaped quote
+        } else {
+          quotes++;
+        }
+      }
+    }
+
+    // Toggle inQuotes based on parity: odd toggles state
+    if (quotes % 2 !== 0) inQuotes = !inQuotes;
   }
+
+  // Don't forget the last line
+  if (current.trim() !== "") rows.push(parseCsvLine(current));
+
   return rows;
 }
 

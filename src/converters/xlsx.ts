@@ -21,7 +21,8 @@ function sheetsToMarkdown(workbook: XLSX.WorkBook): string {
 
     parts.push(`## ${sheetName}`);
 
-    // Convert sheet to HTML and then to markdown
+    // Convert sheet to HTML, then to markdown
+    // htmlToMarkdown handles <thead> promotion for GFM tables
     const html = XLSX.utils.sheet_to_html(sheet);
     const { markdown } = htmlToMarkdown(html);
     parts.push(markdown.trim());

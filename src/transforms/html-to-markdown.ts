@@ -90,6 +90,28 @@ function createTurndownService(opts?: ConvertOptions): TurndownService {
     },
   });
 
+  // Custom rule: definition lists (used by mammoth for DOCX comments)
+  td.addRule("definitionList", {
+    filter: "dl",
+    replacement(content) {
+      return "\n\n" + content + "\n\n";
+    },
+  });
+
+  td.addRule("definitionTerm", {
+    filter: "dt",
+    replacement(content) {
+      return "\n" + content + "\n";
+    },
+  });
+
+  td.addRule("definitionDescription", {
+    filter: "dd",
+    replacement(content) {
+      return ":   " + content.trim() + "\n";
+    },
+  });
+
   // Custom rule: convert checkboxes
   td.addRule("checkboxes", {
     filter(node) {
@@ -119,12 +141,58 @@ export function htmlToMarkdown(
   // Extract title
   const title = $("title").first().text() || undefined;
 
-  // Get body content (or full document if no body)
+  // Strip <p> wrappers inside table cells to avoid multi-line cell content (DOM-based)
+  $("td, th").each((_, el) => {
+    const $el = $(el);
+    $el.find("> p").each((_, p) => {
+      $(p).replaceWith($(p).html() + " ");
+    });
+    $el.html(($el.html() || "").trim());
+  });
+
+  // Promote first <tr> to <thead><tr><th> if missing, so Turndown GFM tables work (DOM-based)
+  $("table").each((_, table) => {
+    const $table = $(table);
+    if ($table.find("thead").length) return;
+
+    const $firstRow = $table.find("> tr, > tbody > tr").first();
+    if (!$firstRow.length) return;
+
+    // Convert td to th in first row
+    $firstRow.find("> td").each((_, td) => {
+      const $td = $(td);
+      const $th = $("<th>").html($td.html() || "");
+      const attrs = (td as any).attribs || {};
+      for (const [name, value] of Object.entries(attrs)) {
+        $th.attr(name, value as string);
+      }
+      $td.replaceWith($th);
+    });
+
+    // Wrap first row in thead
+    const $thead = $("<thead>").append($firstRow.clone());
+    $firstRow.remove();
+
+    // Ensure remaining rows are in tbody
+    const $tbody = $table.find("> tbody");
+    if (!$tbody.length) {
+      const remainingRows = $table.find("> tr");
+      if (remainingRows.length) {
+        const $newTbody = $("<tbody>");
+        remainingRows.each((_, row) => { $newTbody.append($(row)); });
+        $table.append($newTbody);
+      }
+    }
+
+    $table.prepend($thead);
+  });
+
+  // Get processed HTML from cheerio DOM
   const body = $("body");
-  const contentHtml = body.length > 0 ? body.html() || "" : $.html() || "";
+  const processedHtml = body.length > 0 ? body.html() || "" : $.html() || "";
 
   const td = createTurndownService(opts);
-  let markdown = td.turndown(contentHtml);
+  let markdown = td.turndown(processedHtml);
 
   // Trim leading/trailing whitespace
   markdown = markdown.trim();

@@ -287,6 +287,7 @@ export const pptxConverter = converter(
       ignoreAttributes: false,
       attributeNamePrefix: "@_",
       preserveOrder: false,
+      trimValues: false,
     });
 
     // Read relationships to find slide order

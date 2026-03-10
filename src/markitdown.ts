@@ -192,24 +192,33 @@ export function createMarkItDown(options?: MarkItDownOptions) {
 
   async function convert(
     source: string | Buffer,
-    input?: ConvertInput,
+    input?: ConvertInput & { _zipDepth?: number },
   ): Promise<ConvertResult> {
-    if (typeof source === "string") {
-      if (
-        source.startsWith("http:") ||
-        source.startsWith("https:") ||
-        source.startsWith("file:") ||
-        source.startsWith("data:")
-      ) {
-        return convertUri(source, input?.streamInfo);
-      }
-      return convertLocal(source, input?.streamInfo);
+    // Thread _zipDepth from caller (e.g. zip converter) into opts
+    const prevDepth = opts._zipDepth;
+    if (input?._zipDepth !== undefined) {
+      opts._zipDepth = input._zipDepth;
     }
+    try {
+      if (typeof source === "string") {
+        if (
+          source.startsWith("http:") ||
+          source.startsWith("https:") ||
+          source.startsWith("file:") ||
+          source.startsWith("data:")
+        ) {
+          return await convertUri(source, input?.streamInfo);
+        }
+        return await convertLocal(source, input?.streamInfo);
+      }
 
-    // Buffer
-    const info = input?.streamInfo ?? {};
-    const guesses = await detectStreamInfo(source, info);
-    return runConversion(source, guesses);
+      // Buffer
+      const info = input?.streamInfo ?? {};
+      const guesses = await detectStreamInfo(source, info);
+      return await runConversion(source, guesses);
+    } finally {
+      opts._zipDepth = prevDepth;
+    }
   }
 
   async function convertLocal(

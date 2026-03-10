@@ -15,9 +15,11 @@ const matcher = anyOf(
   byMime(...ACCEPTED_MIME_PREFIXES),
 );
 
+const MAX_ZIP_DEPTH = 10;
+
 type ConvertBufferFn = (
   buffer: Buffer,
-  input?: { streamInfo?: StreamInfo },
+  input?: { streamInfo?: StreamInfo; _zipDepth?: number },
 ) => Promise<ConvertResult>;
 
 export function createZipConverter(convertFn: ConvertBufferFn): Converter {
@@ -25,6 +27,11 @@ export function createZipConverter(convertFn: ConvertBufferFn): Converter {
     name: "ZIP",
     match: (ctx: ConverterContext) => matcher(ctx),
     async convert(ctx: ConverterContext) {
+      const currentDepth = ctx.opts._zipDepth ?? 0;
+      if (currentDepth >= MAX_ZIP_DEPTH) {
+        return { markdown: "[Max ZIP nesting depth exceeded]" };
+      }
+
       const JSZip = (await import("jszip")).default;
       const zip = await JSZip.loadAsync(ctx.buffer);
 
@@ -46,6 +53,7 @@ export function createZipConverter(convertFn: ConvertBufferFn): Converter {
               extension: ext || undefined,
               filename,
             },
+            _zipDepth: currentDepth + 1,
           });
 
           md += `## File: ${name}\n\n`;

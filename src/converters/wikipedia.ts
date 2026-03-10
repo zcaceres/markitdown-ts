@@ -2,6 +2,7 @@ import { converter, allOf, anyOf, byMime, byExt, byUrl } from "../converter.js";
 import { decodeBuffer } from "../transforms/decode-text.js";
 import * as cheerio from "cheerio";
 import TurndownService from "turndown";
+import { tables } from "turndown-plugin-gfm";
 
 const ACCEPTED_EXTENSIONS = [".html", ".htm"];
 const ACCEPTED_MIME_PREFIXES = ["text/html", "application/xhtml"];
@@ -39,7 +40,10 @@ export const wikipediaConverter = converter(
     const td = new TurndownService({
       headingStyle: "atx",
       codeBlockStyle: "fenced",
+      bulletListMarker: "*",
+      emDelimiter: "*",
     });
+    td.use(tables);
 
     // Custom link rule to properly format Wikipedia links
     td.addRule("links", {

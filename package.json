@@ -5,10 +5,19 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "markitdown": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node",
+    "build": "bun build src/index.ts src/cli.ts --outdir dist --target node --packages external && tsc --emitDeclarationOnly --outDir dist",
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "publish:dry": "./scripts/publish.sh --dry-run",
+    "publish:npm": "./scripts/publish.sh"
   },
   "dependencies": {
     "cfb": "^1.2.2",
@@ -19,9 +28,11 @@
     "jszip": "^3.10.1",
     "mammoth": "^1.11.0",
     "pdf-parse": "^2.4.5",
+    "pdfplumber-wasm": "^0.2.0",
     "turndown": "^7.2.2",
     "turndown-plugin-gfm": "^1.0.2",
     "xlsx": "^0.18.5",
+    "youtube-transcript": "^1.2.1",
     "zod": "^4.0.0-beta.20250505"
   },
   "devDependencies": {

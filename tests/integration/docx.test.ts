@@ -35,4 +35,66 @@ describe("DOCX converter", () => {
     );
     expect(result.markdown).not.toContain("data:image/png;base64...");
   });
+
+  test("converts equations.docx with inline LaTeX", async () => {
+    const md = createMarkItDown();
+    const result = await md.convert(path.join(FIXTURES, "equations.docx"));
+    // Should contain inline math markers
+    expect(result.markdown).toContain("$");
+    // Should contain specific equation content like m=1
+    expect(result.markdown).toMatch(/\$.*m.*=.*1.*\$/);
+  });
+
+  test("converts equations.docx with block LaTeX", async () => {
+    const md = createMarkItDown();
+    const result = await md.convert(path.join(FIXTURES, "equations.docx"));
+    // Should contain block math markers $$...$$
+    expect(result.markdown).toMatch(/\$\$.*\$\$/);
+  });
+
+  test("converts test_with_comment.docx with styleMap", async () => {
+    const md = createMarkItDown({ styleMap: "comment-reference => " });
+    const result = await md.convert(
+      path.join(FIXTURES, "test_with_comment.docx"),
+    );
+    // Should contain the comment text
+    expect(result.markdown).toContain("This is a test comment. 12df-321a");
+    expect(result.markdown).toContain("55yiyi-asd09");
+  });
+});
+
+describe("DOCX equation detailed tests", () => {
+  test("equations.docx contains specific LaTeX commands", async () => {
+    const md = createMarkItDown();
+    const result = await md.convert(path.join(FIXTURES, "equations.docx"));
+
+    // Should contain specific LaTeX commands from the physics equations
+    expect(result.markdown).toContain("\\frac");
+    expect(result.markdown).toContain("sin");
+
+    // Should contain specific numeric values from the equations
+    expect(result.markdown).toMatch(/550/);
+    expect(result.markdown).toMatch(/2\.5/);
+  });
+
+  test("equations.docx inline equations have paired delimiters", async () => {
+    const md = createMarkItDown();
+    const result = await md.convert(path.join(FIXTURES, "equations.docx"));
+
+    // Find all $ that are not $$ (inline delimiters)
+    // Replace $$ with placeholder, then count remaining $
+    const withoutBlock = result.markdown.replace(/\$\$/g, "");
+    const inlineDollars = (withoutBlock.match(/\$/g) || []).length;
+    expect(inlineDollars % 2).toBe(0);
+  });
+
+  test("test.docx has no math delimiters (no equations)", async () => {
+    const md = createMarkItDown();
+    const result = await md.convert(path.join(FIXTURES, "test.docx"));
+
+    // test.docx has no equations, so no $ math markers should appear
+    // ($ might appear in text context, so check for LaTeX-style patterns)
+    expect(result.markdown).not.toMatch(/\$\\frac/);
+    expect(result.markdown).not.toMatch(/\$\$/);
+  });
 });

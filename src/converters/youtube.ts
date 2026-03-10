@@ -21,6 +21,55 @@ function findKey(obj: any, key: string): any {
   return undefined;
 }
 
+function extractVideoId(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    return parsed.searchParams.get("v");
+  } catch {
+    return null;
+  }
+}
+
+async function fetchTranscript(
+  videoId: string,
+  languages?: string[],
+): Promise<string | null> {
+  try {
+    const { YoutubeTranscript } = await import("youtube-transcript");
+
+    // Try each preferred language, then fall back to no language preference
+    const langAttempts = languages && languages.length > 0
+      ? [...languages, undefined]
+      : [undefined];
+
+    for (const lang of langAttempts) {
+      // Retry logic: 3 retries, 2s delay
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const config = lang ? { lang } : undefined;
+          const parts = await YoutubeTranscript.fetchTranscript(videoId, config);
+          if (parts && parts.length > 0) {
+            return parts.map((p) => p.text).join(" ");
+          }
+          break; // Empty result, try next language
+        } catch (e) {
+          if (attempt < 2) {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+          } else if (lang !== undefined) {
+            break; // Language not available, try next
+          } else {
+            throw e; // Final fallback failed
+          }
+        }
+      }
+    }
+    return null;
+  } catch {
+    // youtube-transcript not available or transcript fetch failed
+    return null;
+  }
+}
+
 export const youtubeConverter = converter(
   "YouTube",
   allOf(
@@ -81,6 +130,18 @@ export const youtubeConverter = converter(
 
     const description = metadata["description"] || metadata["og:description"];
     if (description) md += `\n### Description\n${description}\n`;
+
+    // Fetch transcript if video ID available
+    const videoId = ctx.info.url ? extractVideoId(ctx.info.url) : null;
+    if (videoId) {
+      const transcript = await fetchTranscript(
+        videoId,
+        ctx.opts.youtubeTranscriptLanguages,
+      );
+      if (transcript) {
+        md += `\n### Transcript\n${transcript}\n`;
+      }
+    }
 
     return { markdown: md, title: title || undefined };
   },

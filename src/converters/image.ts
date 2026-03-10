@@ -33,8 +33,15 @@ export const imageConverter = converter(
 
     // Optional LLM description
     if (ctx.opts.llmClient && ctx.opts.llmModel) {
+      const extMimeMap: Record<string, string> = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+      };
       const contentType =
-        ctx.info.mimetype || "application/octet-stream";
+        ctx.info.mimetype ||
+        (ctx.info.extension ? extMimeMap[ctx.info.extension] : undefined) ||
+        "application/octet-stream";
       const base64Image = ctx.buffer.toString("base64");
       const dataUri = `data:${contentType};base64,${base64Image}`;
       const prompt =
