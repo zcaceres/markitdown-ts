@@ -259,44 +259,44 @@ function extractFormContentFromWords(
 
 // --- pdfplumber-wasm initialization for Bun ---
 
-let _wasmInitialized = false;
-let _WasmPdf: any = null;
+let _initPromise: Promise<any> | null = null;
 
 async function initPdfplumber(): Promise<any> {
-  if (_wasmInitialized) return _WasmPdf;
+  if (!_initPromise) {
+    _initPromise = (async () => {
+      const bgModule: any = await import("pdfplumber-wasm/pdfplumber_wasm_bg.js");
 
-  const bgModule: any = await import("pdfplumber-wasm/pdfplumber_wasm_bg.js");
+      // Build imports object for WASM instantiation
+      const imports: Record<string, Record<string, any>> = {
+        "./pdfplumber_wasm_bg.js": {},
+      };
+      for (const [key, value] of Object.entries(bgModule)) {
+        if (
+          (key.startsWith("__wbg_") || key.startsWith("__wbindgen_")) &&
+          typeof value === "function"
+        ) {
+          imports["./pdfplumber_wasm_bg.js"][key] = value;
+        }
+      }
 
-  // Build imports object for WASM instantiation
-  const imports: Record<string, Record<string, any>> = {
-    "./pdfplumber_wasm_bg.js": {},
-  };
-  for (const [key, value] of Object.entries(bgModule)) {
-    if (
-      (key.startsWith("__wbg_") || key.startsWith("__wbindgen_")) &&
-      typeof value === "function"
-    ) {
-      imports["./pdfplumber_wasm_bg.js"][key] = value;
-    }
+      // Find and load the WASM file
+      const wasmPath = path.join(
+        path.dirname(require.resolve("pdfplumber-wasm/package.json")),
+        "pdfplumber_wasm_bg.wasm",
+      );
+      const wasmBytes = fs.readFileSync(wasmPath);
+      const wasmModule = new WebAssembly.Module(wasmBytes);
+      const wasmInstance = new WebAssembly.Instance(wasmModule, imports);
+      bgModule.__wbg_set_wasm(wasmInstance.exports);
+
+      if (typeof (wasmInstance.exports as any).__wbindgen_start === "function") {
+        (wasmInstance.exports as any).__wbindgen_start();
+      }
+
+      return bgModule.WasmPdf;
+    })();
   }
-
-  // Find and load the WASM file
-  const wasmPath = path.join(
-    path.dirname(require.resolve("pdfplumber-wasm/package.json")),
-    "pdfplumber_wasm_bg.wasm",
-  );
-  const wasmBytes = fs.readFileSync(wasmPath);
-  const wasmModule = new WebAssembly.Module(wasmBytes);
-  const wasmInstance = new WebAssembly.Instance(wasmModule, imports);
-  bgModule.__wbg_set_wasm(wasmInstance.exports);
-
-  if (typeof (wasmInstance.exports as any).__wbindgen_start === "function") {
-    (wasmInstance.exports as any).__wbindgen_start();
-  }
-
-  _WasmPdf = bgModule.WasmPdf;
-  _wasmInitialized = true;
-  return _WasmPdf;
+  return _initPromise;
 }
 
 export const pdfConverter = converter(
@@ -310,41 +310,47 @@ export const pdfConverter = converter(
     try {
       const WasmPdf = await initPdfplumber();
       const pdf = WasmPdf.open(new Uint8Array(ctx.buffer));
+      try {
+        for (let i = 0; i < pdf.pageCount; i++) {
+          const page = pdf.page(i);
+          try {
+            const rawWords = page.extractWords(3, 3);
+            const words = (rawWords as any[]).map(normalizeWord);
+            const pageWidth = page.width || 612;
 
-      for (let i = 0; i < pdf.pageCount; i++) {
-        const page = pdf.page(i);
-        const rawWords = page.extractWords(3, 3);
-        const words = (rawWords as any[]).map(normalizeWord);
-        const pageWidth = page.width || 612;
+            const pageContent = extractFormContentFromWords(words, pageWidth);
 
-        const pageContent = extractFormContentFromWords(words, pageWidth);
-
-        if (pageContent === null) {
-          plainPages++;
-          const text = page.extractText();
-          if (text && text.trim()) markdownChunks.push(text.trim());
-        } else {
-          formPages++;
-          if (pageContent.trim()) markdownChunks.push(pageContent);
+            if (pageContent === null) {
+              plainPages++;
+              const text = page.extractText();
+              if (text && text.trim()) markdownChunks.push(text.trim());
+            } else {
+              formPages++;
+              if (pageContent.trim()) markdownChunks.push(pageContent);
+            }
+          } finally {
+            page.free();
+          }
         }
-        page.free();
-      }
 
-      let markdown: string;
-      if (plainPages > formPages && plainPages > 0) {
-        // Use pdf-parse for plain text pages (better word spacing, like Python's pdfminer)
+        let markdown: string;
+        if (plainPages > formPages && plainPages > 0) {
+          markdown = await fallbackPdfParse(ctx.buffer);
+        } else {
+          markdown = markdownChunks.join("\n\n").trim();
+        }
+
+        if (!markdown.trim()) {
+          markdown = await fallbackPdfParse(ctx.buffer);
+        }
+
+        return { markdown: mergePartialNumberingLines(markdown) };
+      } catch {
+        const markdown = await fallbackPdfParse(ctx.buffer);
+        return { markdown: mergePartialNumberingLines(markdown) };
+      } finally {
         pdf.free();
-        markdown = await fallbackPdfParse(ctx.buffer);
-      } else {
-        pdf.free();
-        markdown = markdownChunks.join("\n\n").trim();
       }
-
-      if (!markdown.trim()) {
-        markdown = await fallbackPdfParse(ctx.buffer);
-      }
-
-      return { markdown: mergePartialNumberingLines(markdown) };
     } catch {
       const markdown = await fallbackPdfParse(ctx.buffer);
       return { markdown: mergePartialNumberingLines(markdown) };

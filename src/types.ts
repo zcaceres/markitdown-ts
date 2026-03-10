@@ -24,5 +24,6 @@ export const ConvertOptionsSchema = z.object({
   styleMap: z.string().optional(),
   keepDataUris: z.boolean().optional(),
   youtubeTranscriptLanguages: z.array(z.string()).optional(),
+  _zipDepth: z.number().optional(),
 });
 export type ConvertOptions = z.infer<typeof ConvertOptionsSchema>;

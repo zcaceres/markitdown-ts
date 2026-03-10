@@ -76,7 +76,9 @@ export const epubConverter = converter(
       .map((id: string) => {
         const href = manifest.get(id);
         if (!href) return null;
-        return basePath ? `${basePath}/${href}` : href;
+        let decoded: string;
+        try { decoded = decodeURIComponent(href); } catch { decoded = href; }
+        return basePath ? `${basePath}/${decoded}` : decoded;
       })
       .filter(Boolean) as string[];
 

@@ -141,44 +141,55 @@ export function htmlToMarkdown(
   // Extract title
   const title = $("title").first().text() || undefined;
 
-  // Get body content (or full document if no body)
+  // Strip <p> wrappers inside table cells to avoid multi-line cell content (DOM-based)
+  $("td, th").each((_, el) => {
+    const $el = $(el);
+    $el.find("> p").each((_, p) => {
+      $(p).replaceWith($(p).html() + " ");
+    });
+    $el.html(($el.html() || "").trim());
+  });
+
+  // Promote first <tr> to <thead><tr><th> if missing, so Turndown GFM tables work (DOM-based)
+  $("table").each((_, table) => {
+    const $table = $(table);
+    if ($table.find("thead").length) return;
+
+    const $firstRow = $table.find("> tr, > tbody > tr").first();
+    if (!$firstRow.length) return;
+
+    // Convert td to th in first row
+    $firstRow.find("> td").each((_, td) => {
+      const $td = $(td);
+      const $th = $("<th>").html($td.html() || "");
+      const attrs = (td as any).attribs || {};
+      for (const [name, value] of Object.entries(attrs)) {
+        $th.attr(name, value as string);
+      }
+      $td.replaceWith($th);
+    });
+
+    // Wrap first row in thead
+    const $thead = $("<thead>").append($firstRow.clone());
+    $firstRow.remove();
+
+    // Ensure remaining rows are in tbody
+    const $tbody = $table.find("> tbody");
+    if (!$tbody.length) {
+      const remainingRows = $table.find("> tr");
+      if (remainingRows.length) {
+        const $newTbody = $("<tbody>");
+        remainingRows.each((_, row) => { $newTbody.append($(row)); });
+        $table.append($newTbody);
+      }
+    }
+
+    $table.prepend($thead);
+  });
+
+  // Get processed HTML from cheerio DOM
   const body = $("body");
-  const contentHtml = body.length > 0 ? body.html() || "" : $.html() || "";
-
-  // Strip <p> wrappers inside table cells to avoid multi-line cell content
-  let processedHtml = contentHtml.replace(
-    /<(td|th)\b([^>]*)>([\s\S]*?)<\/(td|th)>/gi,
-    (_m, tag: string, attrs: string, inner: string, closeTag: string) => {
-      // Replace <p>...</p> with just the text content, separated by spaces
-      const stripped = inner
-        .replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, "$1 ")
-        .trim();
-      return `<${tag}${attrs}>${stripped}</${closeTag}>`;
-    },
-  );
-
-  // Promote first <tr> to <thead><tr><th> if missing, so Turndown GFM tables work
-  processedHtml = processedHtml.replace(
-    /<table[^>]*>([\s\S]*?)<\/table>/gi,
-    (fullMatch, inner: string) => {
-      // Skip if already has <thead>
-      if (/<thead/i.test(inner)) return fullMatch;
-      const firstRowMatch = inner.match(
-        /^(\s*(?:<tbody>\s*)?)<tr[^>]*>([\s\S]*?)<\/tr>/i,
-      );
-      if (!firstRowMatch) return fullMatch;
-      const prefix = firstRowMatch[1];
-      const headerCells = firstRowMatch[2];
-      const rest = inner.slice(firstRowMatch[0].length);
-      const thCells = headerCells.replace(
-        /<td\b[^>]*>([\s\S]*?)<\/td>/gi,
-        "<th>$1</th>",
-      );
-      const cleanPrefix = prefix.replace(/<tbody>\s*/i, "");
-      const restWithTbody = /<tbody/i.test(rest) ? rest : `<tbody>${rest}`;
-      return `<table>${cleanPrefix}<thead><tr>${thCells}</tr></thead>${restWithTbody}</table>`;
-    },
-  );
+  const processedHtml = body.length > 0 ? body.html() || "" : $.html() || "";
 
   const td = createTurndownService(opts);
   let markdown = td.turndown(processedHtml);
