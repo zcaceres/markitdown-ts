@@ -25,10 +25,14 @@ export const imageConverter = converter(
 
     // Extract metadata via exiftool
     const metadata = await exiftoolMetadata(ctx.buffer, ctx.opts.exiftoolPath);
+    const metaLines: string[] = [];
     for (const field of IMAGE_METADATA_FIELDS) {
       if (metadata[field]) {
-        md += `${field}: ${metadata[field]}\n`;
+        metaLines.push(`- **${field}:** ${metadata[field]}`);
       }
+    }
+    if (metaLines.length) {
+      md += "# Image Metadata\n\n" + metaLines.join("\n") + "\n";
     }
 
     // Optional LLM description
