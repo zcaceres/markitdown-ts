@@ -28,10 +28,14 @@ export const audioConverter = converter(
 
     // Extract metadata via exiftool
     const metadata = await exiftoolMetadata(ctx.buffer, ctx.opts.exiftoolPath);
+    const metaLines: string[] = [];
     for (const field of AUDIO_METADATA_FIELDS) {
       if (metadata[field]) {
-        md += `${field}: ${metadata[field]}\n`;
+        metaLines.push(`- **${field}:** ${metadata[field]}`);
       }
+    }
+    if (metaLines.length) {
+      md += "# Audio Metadata\n\n" + metaLines.join("\n") + "\n";
     }
 
     // Note: speech transcription via speech_recognition is not ported
