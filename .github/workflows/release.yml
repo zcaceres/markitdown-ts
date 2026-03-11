@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version from package.json
+        id: version
+        run: echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Check if release already exists
+        id: check
+        run: |
+          if gh release view "v${{ steps.version.outputs.version }}" &>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Bun
+        if: steps.check.outputs.exists == 'false'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        if: steps.check.outputs.exists == 'false'
+        run: bun install --frozen-lockfile
+
+      - name: Build compiled binaries
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          bun build src/cli.ts --compile --target=bun-linux-x64 --outfile markitdown-linux-x64
+          bun build src/cli.ts --compile --target=bun-linux-arm64 --outfile markitdown-linux-arm64
+          bun build src/cli.ts --compile --target=bun-darwin-x64 --outfile markitdown-darwin-x64
+          bun build src/cli.ts --compile --target=bun-darwin-arm64 --outfile markitdown-darwin-arm64
+          bun build src/cli.ts --compile --target=bun-windows-x64 --outfile markitdown-windows-x64.exe
+
+      - name: Create GitHub Release
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          gh release create "v${{ steps.version.outputs.version }}" \
+            --title "v${{ steps.version.outputs.version }}" \
+            --generate-notes \
+            markitdown-linux-x64 \
+            markitdown-linux-arm64 \
+            markitdown-darwin-x64 \
+            markitdown-darwin-arm64 \
+            markitdown-windows-x64.exe
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
