@@ -24,6 +24,28 @@ export interface FailedConversionAttempt {
   error?: Error;
 }
 
+const SUPPORTED_FORMATS_LIST =
+  "pdf, docx, pptx, xlsx, xls, html, csv, epub, zip, msg, json, ipynb, jpg, png, mp3, wav";
+
+export function getSuggestion(error: unknown): string | undefined {
+  if (error instanceof UnsupportedFormatError) {
+    return `Supported formats: ${SUPPORTED_FORMATS_LIST}. Use --describe for full details.`;
+  }
+  if (error instanceof FileConversionError) {
+    return "The file was recognized but conversion failed. Ensure the file is not corrupted.";
+  }
+  if (error instanceof MissingDependencyError) {
+    return "A required dependency is missing. Check the installation.";
+  }
+  if (error && typeof error === "object" && "code" in error) {
+    const code = (error as { code: string }).code;
+    if (code === "ENOENT") return "Check the file path and try again.";
+    if (code === "EACCES" || code === "EPERM")
+      return "Check file permissions and try again.";
+  }
+  return undefined;
+}
+
 export class FileConversionError extends MarkItDownError {
   attempts?: FailedConversionAttempt[];
 
