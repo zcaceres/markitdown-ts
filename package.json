@@ -14,6 +14,7 @@
   ],
   "scripts": {
     "build": "bun build src/index.ts src/cli.ts --outdir dist --target node --packages external && tsc --emitDeclarationOnly --outDir dist",
+    "compile": "bun build src/cli.ts --compile --outfile markitdown",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "publish:dry": "./scripts/publish.sh --dry-run",
