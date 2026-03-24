@@ -2,3 +2,5 @@ reference-markitdown/
 node_modules/
 dist/
 .claude/
+# Parity Comparation Test outputs
+tests/results/
