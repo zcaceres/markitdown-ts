@@ -1,28 +1,34 @@
 #!/usr/bin/env node
 import fs from "node:fs";
-import path from "node:path";
-import { createMarkItDown } from "./markitdown.js";
-import {
-  UnsupportedFormatError,
-  FileConversionError,
-  getSuggestion,
-} from "./exceptions.js";
-import {
-  getExitCode,
-  EXIT_SUCCESS,
-  EXIT_BAD_ARGUMENTS,
-  EXIT_CONVERSION_FAILURE,
-  EXIT_CODE_DESCRIPTIONS,
-} from "./exit-codes.js";
 import pkg from "../package.json";
+import { FileConversionError, getSuggestion, UnsupportedFormatError } from "./exceptions.js";
+import { EXIT_BAD_ARGUMENTS, EXIT_CODE_DESCRIPTIONS, EXIT_SUCCESS, getExitCode } from "./exit-codes.js";
+import { createMarkItDown } from "./markitdown.js";
 
 const VERSION = pkg.version;
 
 const SUPPORTED_FORMATS = [
-  "pdf", "docx", "pptx", "xlsx", "xls", "html", "csv",
-  "epub", "zip", "msg", "json", "ipynb",
-  "jpg", "jpeg", "png", "gif", "bmp", "tiff", "webp",
-  "mp3", "wav",
+  "pdf",
+  "docx",
+  "pptx",
+  "xlsx",
+  "xls",
+  "html",
+  "csv",
+  "epub",
+  "zip",
+  "msg",
+  "json",
+  "ipynb",
+  "jpg",
+  "jpeg",
+  "png",
+  "gif",
+  "bmp",
+  "tiff",
+  "webp",
+  "mp3",
+  "wav",
 ];
 
 const USAGE = `Usage: markitdown [options] [file...]
@@ -183,9 +189,7 @@ async function convertOne(
   }
 }
 
-async function convertStdin(
-  md: ReturnType<typeof createMarkItDown>,
-): Promise<ConvertSuccess | ConvertFailure> {
+async function convertStdin(md: ReturnType<typeof createMarkItDown>): Promise<ConvertSuccess | ConvertFailure> {
   const MAX_STDIN_BYTES = 500 * 1024 * 1024; // 500MB
   const chunks: Buffer[] = [];
   let totalBytes = 0;
@@ -216,14 +220,11 @@ async function convertStdin(
   }
 
   try {
-    let result;
+    let result: Awaited<ReturnType<typeof md.convert>> | undefined;
     try {
       result = await md.convert(buffer);
     } catch (e) {
-      if (
-        e instanceof UnsupportedFormatError ||
-        e instanceof FileConversionError
-      ) {
+      if (e instanceof UnsupportedFormatError || e instanceof FileConversionError) {
         result = await md.convert(buffer, {
           streamInfo: { charset: "utf-8" },
         });
@@ -251,27 +252,18 @@ async function convertStdin(
 
 // --- Output rendering ---
 
-function outputResultsJson(
-  successes: ConvertSuccess[],
-  failures: ConvertFailure[],
-  outputFile?: string,
-) {
+function outputResultsJson(successes: ConvertSuccess[], failures: ConvertFailure[], outputFile?: string) {
   const isBatch = successes.length + failures.length > 1;
 
   if (isBatch) {
-    const status =
-      failures.length === 0
-        ? "success"
-        : successes.length === 0
-          ? "error"
-          : "partial";
+    const status = failures.length === 0 ? "success" : successes.length === 0 ? "error" : "partial";
     const envelope = {
       version: 1,
       status,
       results: successes.map(({ status: _, ...rest }) => rest),
       errors: failures.map(({ status: _, ...rest }) => rest),
     };
-    writeOutput(JSON.stringify(envelope, null, 2) + "\n", outputFile);
+    writeOutput(`${JSON.stringify(envelope, null, 2)}\n`, outputFile);
   } else if (successes.length === 1) {
     const s = successes[0];
     const envelope: Record<string, unknown> = {
@@ -281,7 +273,7 @@ function outputResultsJson(
       markdown: s.markdown,
     };
     if (s.title) envelope.title = s.title;
-    writeOutput(JSON.stringify(envelope, null, 2) + "\n", outputFile);
+    writeOutput(`${JSON.stringify(envelope, null, 2)}\n`, outputFile);
   }
 
   // Write errors to stderr as JSON
@@ -295,15 +287,11 @@ function outputResultsJson(
       file: f.file,
     };
     if (f.suggestion) errEnvelope.suggestion = f.suggestion;
-    process.stderr.write(JSON.stringify(errEnvelope, null, 2) + "\n");
+    process.stderr.write(`${JSON.stringify(errEnvelope, null, 2)}\n`);
   }
 }
 
-function outputResultsPlain(
-  successes: ConvertSuccess[],
-  failures: ConvertFailure[],
-  outputFile?: string,
-) {
+function outputResultsPlain(successes: ConvertSuccess[], failures: ConvertFailure[], outputFile?: string) {
   if (successes.length === 1 && failures.length === 0) {
     writeOutput(successes[0].markdown, outputFile);
   } else {
@@ -347,15 +335,13 @@ function printDescribe() {
       "--version": "Print version",
       "--help": "Print help message",
     },
-    exitCodes: Object.fromEntries(
-      Object.entries(EXIT_CODE_DESCRIPTIONS).map(([k, v]) => [k, v]),
-    ),
+    exitCodes: Object.fromEntries(Object.entries(EXIT_CODE_DESCRIPTIONS).map(([k, v]) => [k, v])),
     envVars: {
       MARKITDOWN_OUTPUT_FORMAT: "Set to 'json' for structured output",
       MARKITDOWN_QUIET: "Set to '1' to suppress non-essential output",
     },
   };
-  process.stdout.write(JSON.stringify(description, null, 2) + "\n");
+  process.stdout.write(`${JSON.stringify(description, null, 2)}\n`);
 }
 
 // --- Main ---
@@ -364,12 +350,12 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
 
   if (args.showHelp) {
-    process.stdout.write(USAGE + "\n");
+    process.stdout.write(`${USAGE}\n`);
     process.exit(EXIT_SUCCESS);
   }
 
   if (args.showVersion) {
-    process.stdout.write(VERSION + "\n");
+    process.stdout.write(`${VERSION}\n`);
     process.exit(EXIT_SUCCESS);
   }
 
@@ -389,13 +375,17 @@ async function main() {
       const msg = "Error: No files matched the given pattern(s)\n";
       if (args.jsonMode) {
         process.stderr.write(
-          JSON.stringify({
-            version: 1,
-            status: "error",
-            exitCode: EXIT_BAD_ARGUMENTS,
-            errorType: "NoFilesMatched",
-            message: "No files matched the given pattern(s)",
-          }, null, 2) + "\n",
+          `${JSON.stringify(
+            {
+              version: 1,
+              status: "error",
+              exitCode: EXIT_BAD_ARGUMENTS,
+              errorType: "NoFilesMatched",
+              message: "No files matched the given pattern(s)",
+            },
+            null,
+            2,
+          )}\n`,
         );
       } else {
         process.stderr.write(msg);
@@ -421,7 +411,7 @@ async function main() {
     }
   } else {
     // No input — print usage
-    process.stderr.write(USAGE + "\n");
+    process.stderr.write(`${USAGE}\n`);
     process.exit(EXIT_BAD_ARGUMENTS);
   }
 

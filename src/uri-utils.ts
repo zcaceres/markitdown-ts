@@ -63,9 +63,7 @@ export function parseDataUri(uri: string): {
     }
   }
 
-  const data = isBase64
-    ? Buffer.from(rawData, "base64")
-    : Buffer.from(decodeURIComponent(rawData));
+  const data = isBase64 ? Buffer.from(rawData, "base64") : Buffer.from(decodeURIComponent(rawData));
 
   return { mimeType, attributes, data };
 }

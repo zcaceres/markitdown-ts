@@ -1,4 +1,4 @@
-import { converter, anyOf, byMime, byExt } from "../converter.js";
+import { anyOf, byExt, byMime, converter } from "../converter.js";
 import { exiftoolMetadata } from "./exiftool.js";
 
 const ACCEPTED_EXTENSIONS = [".wav", ".mp3", ".m4a", ".mp4"];
@@ -35,7 +35,7 @@ export const audioConverter = converter(
       }
     }
     if (metaLines.length) {
-      md += "# Audio Metadata\n\n" + metaLines.join("\n") + "\n";
+      md += `# Audio Metadata\n\n${metaLines.join("\n")}\n`;
     }
 
     // Note: speech transcription via speech_recognition is not ported

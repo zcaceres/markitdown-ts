@@ -1,4 +1,6 @@
 reference-markitdown/
 node_modules/
 dist/
+coverage/
+*.lcov
 .claude/

@@ -16,6 +16,9 @@
     "build": "bun build src/index.ts src/cli.ts --outdir dist --target node --packages external && tsc --emitDeclarationOnly --outDir dist",
     "compile": "bun build src/cli.ts --compile --outfile markitdown",
     "test": "bun test",
+    "test:coverage": "bun test --coverage --coverage-reporter=lcov --coverage-reporter=text",
+    "lint": "biome check src/ tests/",
+    "lint:fix": "biome check --write src/ tests/",
     "typecheck": "tsc --noEmit",
     "publish:dry": "./scripts/publish.sh --dry-run",
     "publish:npm": "./scripts/publish.sh"
@@ -37,6 +40,7 @@
     "zod": "^4.0.0-beta.20250505"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.10",
     "@types/bun": "latest",
     "@types/turndown": "^5.0.6",
     "typescript": "^5.7.0"

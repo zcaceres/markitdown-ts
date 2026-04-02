@@ -1,6 +1,6 @@
-import { converter, allOf, anyOf, byMime, byExt, byUrl } from "../converter.js";
-import { decodeBuffer } from "../transforms/decode-text.js";
 import * as cheerio from "cheerio";
+import { allOf, anyOf, byExt, byMime, byUrl, converter } from "../converter.js";
+import { decodeBuffer } from "../transforms/decode-text.js";
 
 const ACCEPTED_EXTENSIONS = [".html", ".htm"];
 const ACCEPTED_MIME_PREFIXES = ["text/html", "application/xhtml"];
@@ -30,17 +30,12 @@ function extractVideoId(url: string): string | null {
   }
 }
 
-async function fetchTranscript(
-  videoId: string,
-  languages?: string[],
-): Promise<string | null> {
+async function fetchTranscript(videoId: string, languages?: string[]): Promise<string | null> {
   try {
     const { YoutubeTranscript } = await import("youtube-transcript");
 
     // Try each preferred language, then fall back to no language preference
-    const langAttempts = languages && languages.length > 0
-      ? [...languages, undefined]
-      : [undefined];
+    const langAttempts = languages && languages.length > 0 ? [...languages, undefined] : [undefined];
 
     for (const lang of langAttempts) {
       // Retry logic: 3 retries, 2s delay
@@ -84,7 +79,7 @@ export const youtubeConverter = converter(
     // Read meta tags
     const metadata: Record<string, string> = {};
     const titleText = $("title").first().text();
-    if (titleText) metadata["title"] = titleText;
+    if (titleText) metadata.title = titleText;
 
     $("meta").each((_, el) => {
       const $el = $(el);
@@ -101,14 +96,14 @@ export const youtubeConverter = converter(
     // Try extracting description from ytInitialData
     $("script").each((_, el) => {
       const content = $(el).html();
-      if (!content || !content.includes("ytInitialData")) return;
+      if (!content?.includes("ytInitialData")) return;
       const match = content.match(/var ytInitialData = ({.*?});/);
       if (match) {
         try {
           const data = JSON.parse(match[1]);
           const attrDesc = findKey(data, "attributedDescriptionBodyText");
           if (attrDesc && typeof attrDesc === "object" && attrDesc.content) {
-            metadata["description"] = String(attrDesc.content);
+            metadata.description = String(attrDesc.content);
           }
         } catch {
           // ignore parse errors
@@ -119,25 +114,22 @@ export const youtubeConverter = converter(
     // Build markdown
     let md = "# YouTube\n";
 
-    const title = metadata["title"] || metadata["og:title"] || metadata["name"] || "";
+    const title = metadata.title || metadata["og:title"] || metadata.name || "";
     if (title) md += `\n## ${title}\n`;
 
     let stats = "";
-    if (metadata["interactionCount"]) stats += `- **Views:** ${metadata["interactionCount"]}\n`;
-    if (metadata["keywords"]) stats += `- **Keywords:** ${metadata["keywords"]}\n`;
-    if (metadata["duration"]) stats += `- **Runtime:** ${metadata["duration"]}\n`;
+    if (metadata.interactionCount) stats += `- **Views:** ${metadata.interactionCount}\n`;
+    if (metadata.keywords) stats += `- **Keywords:** ${metadata.keywords}\n`;
+    if (metadata.duration) stats += `- **Runtime:** ${metadata.duration}\n`;
     if (stats) md += `\n### Video Metadata\n${stats}\n`;
 
-    const description = metadata["description"] || metadata["og:description"];
+    const description = metadata.description || metadata["og:description"];
     if (description) md += `\n### Description\n${description}\n`;
 
     // Fetch transcript if video ID available
     const videoId = ctx.info.url ? extractVideoId(ctx.info.url) : null;
     if (videoId) {
-      const transcript = await fetchTranscript(
-        videoId,
-        ctx.opts.youtubeTranscriptLanguages,
-      );
+      const transcript = await fetchTranscript(videoId, ctx.opts.youtubeTranscriptLanguages);
       if (transcript) {
         md += `\n### Transcript\n${transcript}\n`;
       }

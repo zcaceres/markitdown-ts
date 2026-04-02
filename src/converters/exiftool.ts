@@ -1,4 +1,4 @@
-import { spawn, execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
@@ -16,10 +16,7 @@ function compareVersions(a: number[], b: number[]): number {
   return 0;
 }
 
-export async function exiftoolMetadata(
-  buffer: Buffer,
-  exiftoolPath?: string,
-): Promise<Record<string, string>> {
+export async function exiftoolMetadata(buffer: Buffer, exiftoolPath?: string): Promise<Record<string, string>> {
   if (!exiftoolPath) return {};
 
   // Verify version (CVE-2021-22204 mitigation)
@@ -44,7 +41,7 @@ export async function exiftoolMetadata(
       });
       const chunks: Buffer[] = [];
       proc.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
-      proc.on("close", (code) => {
+      proc.on("close", (_code) => {
         resolve(Buffer.concat(chunks).toString("utf-8"));
       });
       proc.on("error", reject);

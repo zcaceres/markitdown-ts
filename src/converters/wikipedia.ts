@@ -1,8 +1,8 @@
-import { converter, allOf, anyOf, byMime, byExt, byUrl } from "../converter.js";
-import { decodeBuffer } from "../transforms/decode-text.js";
 import * as cheerio from "cheerio";
 import TurndownService from "turndown";
 import { tables } from "turndown-plugin-gfm";
+import { allOf, anyOf, byExt, byMime, byUrl, converter } from "../converter.js";
+import { decodeBuffer } from "../transforms/decode-text.js";
 
 const ACCEPTED_EXTENSIONS = [".html", ".htm"];
 const ACCEPTED_MIME_PREFIXES = ["text/html", "application/xhtml"];

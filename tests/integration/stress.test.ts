@@ -1,11 +1,11 @@
 /**
  * Stress tests: exercise every converter with edge cases to find bugs.
  */
-import { describe, test, expect } from "bun:test";
-import path from "node:path";
+import { describe, expect, test } from "bun:test";
 import fs from "node:fs";
+import path from "node:path";
+import { FileConversionError, UnsupportedFormatError } from "../../src/exceptions";
 import { createMarkItDown } from "../../src/markitdown";
-import { UnsupportedFormatError, FileConversionError } from "../../src/exceptions";
 
 const FIXTURES = path.join(import.meta.dir, "../fixtures");
 const md = createMarkItDown();
@@ -42,9 +42,7 @@ describe("PDF stress tests", () => {
   });
 
   test("PDF table extraction produces valid markdown tables", async () => {
-    const result = await md.convert(
-      path.join(FIXTURES, "SPARSE-2024-INV-1234_borderless_table.pdf"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "SPARSE-2024-INV-1234_borderless_table.pdf"));
     const lines = result.markdown.split("\n");
     const tableLines = lines.filter((l) => l.startsWith("|") && l.endsWith("|"));
     // Every table line should have same number of pipes
@@ -58,9 +56,7 @@ describe("PDF stress tests", () => {
 
   test("PDF mergePartialNumberingLines handles edge cases", async () => {
     // Test via the masterformat fixture
-    const result = await md.convert(
-      path.join(FIXTURES, "masterformat_partial_numbering.pdf"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "masterformat_partial_numbering.pdf"));
     // Should not have empty lines where merging happened
     const lines = result.markdown.split("\n");
     for (let i = 0; i < lines.length - 1; i++) {
@@ -178,10 +174,9 @@ describe("HTML stress tests", () => {
   });
 
   test("leading whitespace HTML is handled", async () => {
-    const result = await md.convert(
-      Buffer.from("   \n\n\n<html><body><p>content</p></body></html>"),
-      { streamInfo: { extension: ".html", mimetype: "text/html" } },
-    );
+    const result = await md.convert(Buffer.from("   \n\n\n<html><body><p>content</p></body></html>"), {
+      streamInfo: { extension: ".html", mimetype: "text/html" },
+    });
     expect(result.markdown).toContain("content");
   });
 
@@ -418,14 +413,12 @@ describe("Cross-converter consistency", () => {
 // ============================================================
 describe("Error handling stress tests", () => {
   test("UnsupportedFormatError for truly unknown format", async () => {
-    const buf = Buffer.from([0xDE, 0xAD, 0xBE, 0xEF]);
+    const buf = Buffer.from([0xde, 0xad, 0xbe, 0xef]);
     try {
       await md.convert(buf, { streamInfo: { extension: ".xyz123" } });
       throw new Error("Should have thrown");
     } catch (e) {
-      expect(
-        e instanceof UnsupportedFormatError || e instanceof FileConversionError,
-      ).toBe(true);
+      expect(e instanceof UnsupportedFormatError || e instanceof FileConversionError).toBe(true);
     }
   });
 
@@ -453,9 +446,7 @@ describe("Error handling stress tests", () => {
       await md.convert(buf, { streamInfo: {} });
       throw new Error("Should have thrown");
     } catch (e) {
-      expect(
-        e instanceof UnsupportedFormatError || e instanceof FileConversionError,
-      ).toBe(true);
+      expect(e instanceof UnsupportedFormatError || e instanceof FileConversionError).toBe(true);
     }
   });
 

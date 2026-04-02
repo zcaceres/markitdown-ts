@@ -1,14 +1,9 @@
-import path from "node:path";
-import { converter, anyOf, byMime, byExt } from "../converter.js";
-import { htmlToMarkdown } from "../transforms/html-to-markdown.js";
+import { anyOf, byExt, byMime, converter } from "../converter.js";
 import { decodeBuffer } from "../transforms/decode-text.js";
+import { htmlToMarkdown } from "../transforms/html-to-markdown.js";
 
 const ACCEPTED_EXTENSIONS = [".epub"];
-const ACCEPTED_MIME_PREFIXES = [
-  "application/epub",
-  "application/epub+zip",
-  "application/x-epub+zip",
-];
+const ACCEPTED_MIME_PREFIXES = ["application/epub", "application/epub+zip", "application/x-epub+zip"];
 
 export const epubConverter = converter(
   "EPUB",
@@ -38,7 +33,7 @@ export const epubConverter = converter(
 
     const opfParser = new XMLParser({ ignoreAttributes: false });
     const opf = opfParser.parse(opfXml);
-    const pkg = opf?.["package"] ?? opf?.package;
+    const pkg = opf?.package ?? opf?.package;
 
     // Extract metadata
     const meta = pkg?.metadata ?? {};
@@ -63,21 +58,21 @@ export const epubConverter = converter(
 
     // Extract spine order
     const spineItems = asArray(pkg?.spine?.itemref);
-    const spineOrder = spineItems
-      .map((item: any) => item["@_idref"])
-      .filter(Boolean);
+    const spineOrder = spineItems.map((item: any) => item["@_idref"]).filter(Boolean);
 
     // Resolve spine file paths relative to content.opf
-    const basePath = opfPath.includes("/")
-      ? opfPath.split("/").slice(0, -1).join("/")
-      : "";
+    const basePath = opfPath.includes("/") ? opfPath.split("/").slice(0, -1).join("/") : "";
 
     const spineFiles = spineOrder
       .map((id: string) => {
         const href = manifest.get(id);
         if (!href) return null;
         let decoded: string;
-        try { decoded = decodeURIComponent(href); } catch { decoded = href; }
+        try {
+          decoded = decodeURIComponent(href);
+        } catch {
+          decoded = href;
+        }
         return basePath ? `${basePath}/${decoded}` : decoded;
       })
       .filter(Boolean) as string[];
@@ -100,9 +95,7 @@ export const epubConverter = converter(
     const metadataLines: string[] = [];
     for (const [key, value] of Object.entries(metadata)) {
       if (value) {
-        metadataLines.push(
-          `**${key.charAt(0).toUpperCase() + key.slice(1)}:** ${value}`,
-        );
+        metadataLines.push(`**${key.charAt(0).toUpperCase() + key.slice(1)}:** ${value}`);
       }
     }
 

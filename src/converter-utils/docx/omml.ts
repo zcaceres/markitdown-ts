@@ -4,32 +4,32 @@
  */
 
 import {
+  ALN,
+  ARR,
+  BACKSLASH,
+  BLANK,
+  BRK,
   CHARS,
   CHR,
   CHR_BO,
   CHR_DEFAULT,
-  POS,
-  POS_DEFAULT,
-  SUB,
-  SUP,
-  F,
-  F_DEFAULT,
-  T,
-  FUNC,
   D,
   D_DEFAULT,
-  RAD,
-  RAD_DEFAULT,
-  ARR,
+  F,
+  F_DEFAULT,
+  FUNC,
+  FUNC_PLACE,
   LIM_FUNC,
   LIM_TO,
   LIM_UPP,
   M,
-  BRK,
-  BLANK,
-  BACKSLASH,
-  ALN,
-  FUNC_PLACE,
+  POS,
+  POS_DEFAULT,
+  RAD,
+  RAD_DEFAULT,
+  SUB,
+  SUP,
+  T,
 } from "./latex-dict.js";
 
 export const OMML_NS = "http://schemas.openxmlformats.org/officeDocument/2006/math";
@@ -72,11 +72,7 @@ function escapeLatex(strs: string): string {
   return newChr.join(BLANK);
 }
 
-function getVal(
-  key: string | null | undefined,
-  defaultVal?: string,
-  store?: Record<string, string>,
-): string {
+function getVal(key: string | null | undefined, defaultVal?: string, store?: Record<string, string>): string {
   if (key != null) {
     return !store ? key : (store[key] ?? key);
   }
@@ -90,7 +86,7 @@ type Element = {
   children: Element[];
 };
 
-function parseXml(xmlStr: string): Element {
+function _parseXml(_xmlStr: string): Element {
   // Use fast-xml-parser to parse XML to a tree, then convert to our Element structure
   // For simplicity, we'll use a lightweight DOM approach
   // Since we're in a Node/Bun environment, we can use a simple regex-based approach
@@ -102,7 +98,7 @@ function parseXml(xmlStr: string): Element {
 }
 
 /** Parse XML string to Element tree using fast-xml-parser */
-function parseXmlToElements(xmlString: string): Element {
+function _parseXmlToElements(_xmlString: string): Element {
   // We need namespace-aware XML parsing that preserves the {ns}tag format
   // Let's use a simple SAX-like approach with regex for this specific XML
 
@@ -110,7 +106,7 @@ function parseXmlToElements(xmlString: string): Element {
   // Since we're already using fast-xml-parser in the project, let's use it
 
   const { XMLParser } = require("fast-xml-parser");
-  const parser = new XMLParser({
+  const _parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "@_",
     preserveOrder: true,
@@ -177,7 +173,7 @@ function parseOmmlXml(xmlStr: string): XmlNode {
     // Each object has one key (the tag name) and optional :@attr for attributes
     if (!node || typeof node !== "object") return null;
 
-    const keys = Object.keys(node).filter(k => k !== ":@");
+    const keys = Object.keys(node).filter((k) => k !== ":@");
     if (keys.length === 0) return null;
 
     const tagName = keys[0];
@@ -197,7 +193,7 @@ function parseOmmlXml(xmlStr: string): XmlNode {
     if (Array.isArray(content)) {
       for (const child of content) {
         if (child && typeof child === "object") {
-          const childKeys = Object.keys(child).filter(k => k !== ":@");
+          const childKeys = Object.keys(child).filter((k) => k !== ":@");
           if (childKeys.length > 0) {
             if (childKeys[0] === "#text") {
               text = String(child["#text"]);
@@ -242,7 +238,7 @@ function find(node: XmlNode, tag: string): XmlNode | null {
 }
 
 /** Find text of first matching descendant (like ElementTree findtext) */
-function findtext(node: XmlNode, path: string): string | null {
+function _findtext(node: XmlNode, path: string): string | null {
   // path like "./{ns}t" — find direct child with that tag and return its text
   const tag = path.replace("./", "");
   const child = find(node, tag);
@@ -294,10 +290,7 @@ const DIRECT_TAGS = new Set(["box", "sSub", "sSup", "sSubSup", "num", "den", "de
 
 type ProcessedChild = [string, string, XmlNode];
 
-function* processChildrenList(
-  elm: XmlNode,
-  include?: Set<string>,
-): Generator<ProcessedChild> {
+function* processChildrenList(elm: XmlNode, include?: Set<string>): Generator<ProcessedChild> {
   for (const child of elm.children) {
     if (!child.tag.includes(OMML_NS)) continue;
     const stag = stripNs(child.tag);
@@ -312,10 +305,7 @@ function* processChildrenList(
   }
 }
 
-function processChildrenDict(
-  elm: XmlNode,
-  include?: Set<string>,
-): Record<string, any> {
+function processChildrenDict(elm: XmlNode, include?: Set<string>): Record<string, any> {
   const dict: Record<string, any> = {};
   for (const [stag, t] of processChildrenList(elm, include)) {
     dict[stag] = t;
@@ -359,29 +349,29 @@ function callMethod(elm: XmlNode, stag?: string): string | null {
 
 function doAcc(elm: XmlNode): string {
   const cDict = processChildrenDict(elm);
-  const pr = cDict["accPr"] as PrResult;
-  const latexS = getVal(pr.chr, CHR_DEFAULT["ACC_VAL"], CHR);
-  return tpl0(latexS, cDict["e"]);
+  const pr = cDict.accPr as PrResult;
+  const latexS = getVal(pr.chr, CHR_DEFAULT.ACC_VAL, CHR);
+  return tpl0(latexS, cDict.e);
 }
 
 function doBar(elm: XmlNode): string {
   const cDict = processChildrenDict(elm);
-  const pr = cDict["barPr"] as PrResult;
-  const latexS = getVal(pr.pos, POS_DEFAULT["BAR_VAL"], POS);
-  return pr.text + tpl0(latexS, cDict["e"]);
+  const pr = cDict.barPr as PrResult;
+  const latexS = getVal(pr.pos, POS_DEFAULT.BAR_VAL, POS);
+  return pr.text + tpl0(latexS, cDict.e);
 }
 
 function doD(elm: XmlNode): string {
   const cDict = processChildrenDict(elm);
-  const pr = cDict["dPr"] as PrResult;
-  const nullVal = D_DEFAULT["null"];
-  const sVal = getVal(pr.begChr, D_DEFAULT["left"], T);
-  const eVal = getVal(pr.endChr, D_DEFAULT["right"], T);
+  const pr = cDict.dPr as PrResult;
+  const nullVal = D_DEFAULT.null;
+  const sVal = getVal(pr.begChr, D_DEFAULT.left, T);
+  const eVal = getVal(pr.endChr, D_DEFAULT.right, T);
   return (
     pr.text +
     tpl(D, {
       left: !sVal ? nullVal : escapeLatex(sVal),
-      text: cDict["e"],
+      text: cDict.e,
       right: !eVal ? nullVal : escapeLatex(eVal),
     })
   );
@@ -397,15 +387,15 @@ function doSup(elm: XmlNode): string {
 
 function doF(elm: XmlNode): string {
   const cDict = processChildrenDict(elm);
-  const pr = cDict["fPr"] as PrResult;
+  const pr = cDict.fPr as PrResult;
   const latexS = getVal(pr.type, F_DEFAULT, F);
-  return pr.text + tpl(latexS, { num: cDict["num"] ?? "", den: cDict["den"] ?? "" });
+  return pr.text + tpl(latexS, { num: cDict.num ?? "", den: cDict.den ?? "" });
 }
 
 function doFunc(elm: XmlNode): string {
   const cDict = processChildrenDict(elm);
-  const funcName: string = cDict["fName"] ?? "";
-  return funcName.replace(FUNC_PLACE, cDict["e"] ?? "");
+  const funcName: string = cDict.fName ?? "";
+  return funcName.replace(FUNC_PLACE, cDict.e ?? "");
 }
 
 function doFname(elm: XmlNode): string {
@@ -427,15 +417,15 @@ function doFname(elm: XmlNode): string {
 
 function doGroupchr(elm: XmlNode): string {
   const cDict = processChildrenDict(elm);
-  const pr = cDict["groupChrPr"] as PrResult;
+  const pr = cDict.groupChrPr as PrResult;
   const latexS = getVal(pr.chr);
-  return pr.text + tpl0(latexS, cDict["e"]);
+  return pr.text + tpl0(latexS, cDict.e);
 }
 
 function doRad(elm: XmlNode): string {
   const cDict = processChildrenDict(elm);
-  const text = cDict["e"] ?? "";
-  const degText = cDict["deg"] ?? "";
+  const text = cDict.e ?? "";
+  const degText = cDict.deg ?? "";
   if (degText) {
     return tpl(RAD, { deg: degText, text });
   }
@@ -452,16 +442,16 @@ function doEqarr(elm: XmlNode): string {
 
 function doLimlow(elm: XmlNode): string {
   const tDict = processChildrenDict(elm, new Set(["e", "lim"]));
-  const latexS = LIM_FUNC[tDict["e"]];
+  const latexS = LIM_FUNC[tDict.e];
   if (!latexS) {
-    throw new Error(`Not supported lim ${tDict["e"]}`);
+    throw new Error(`Not supported lim ${tDict.e}`);
   }
-  return tpl(latexS, { lim: tDict["lim"] ?? "" });
+  return tpl(latexS, { lim: tDict.lim ?? "" });
 }
 
 function doLimupp(elm: XmlNode): string {
   const tDict = processChildrenDict(elm, new Set(["e", "lim"]));
-  return tpl(LIM_UPP, { lim: tDict["lim"] ?? "", text: tDict["e"] ?? "" });
+  return tpl(LIM_UPP, { lim: tDict.lim ?? "", text: tDict.e ?? "" });
 }
 
 function doLim(elm: XmlNode): string {
@@ -548,4 +538,4 @@ export function* loadString(xmlString: string): Generator<string> {
   }
 }
 
-export { parseOmmlXml, findAll, find, XmlNode };
+export { find, findAll, parseOmmlXml, type XmlNode };

@@ -1,4 +1,4 @@
-import { converter, anyOf, byMime, byExt } from "../converter.js";
+import { anyOf, byExt, byMime, converter } from "../converter.js";
 
 const ACCEPTED_EXTENSIONS = [".msg"];
 const ACCEPTED_MIME_PREFIXES = ["application/vnd.ms-outlook"];
@@ -16,11 +16,7 @@ export const outlookMsgConverter = converter(
     const cfb = CFB.read(ctx.buffer, { type: "buffer" });
 
     function getStream(streamPath: string): string | null {
-      const paths = [
-        `/${streamPath}`,
-        streamPath,
-        `/Root Entry/${streamPath}`,
-      ];
+      const paths = [`/${streamPath}`, streamPath, `/Root Entry/${streamPath}`];
       for (const p of paths) {
         const entry = CFB.find(cfb, p);
         if (entry?.content) {
@@ -28,7 +24,9 @@ export const outlookMsgConverter = converter(
           try {
             const text = new TextDecoder("utf-16le").decode(data).trim();
             if (text) return text;
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
           try {
             return new TextDecoder("utf-8").decode(data).trim();
           } catch {

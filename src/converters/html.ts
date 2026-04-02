@@ -1,4 +1,4 @@
-import { converter, anyOf, byMime, byExt } from "../converter.js";
+import { anyOf, byExt, byMime, converter } from "../converter.js";
 import { decodeBuffer } from "../transforms/decode-text.js";
 import { htmlToMarkdown } from "../transforms/html-to-markdown.js";
 

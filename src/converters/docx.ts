@@ -1,12 +1,10 @@
-import { converter, anyOf, byMime, byExt } from "../converter.js";
-import { htmlToMarkdown } from "../transforms/html-to-markdown.js";
 import mammoth from "mammoth";
+import { anyOf, byExt, byMime, converter } from "../converter.js";
 import { preProcessDocx } from "../converter-utils/docx/pre-process.js";
+import { htmlToMarkdown } from "../transforms/html-to-markdown.js";
 
 const ACCEPTED_EXTENSIONS = [".docx"];
-const ACCEPTED_MIME_PREFIXES = [
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-];
+const ACCEPTED_MIME_PREFIXES = ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
 
 export const docxConverter = converter(
   "DOCX",
@@ -32,8 +30,7 @@ export const docxConverter = converter(
     // backslashes within LaTeX delimiters ($...$ and $$...$$).
     markdown = markdown.replace(
       /(\${1,2})((?:(?!\1).)+)\1/g,
-      (_match, delim: string, body: string) =>
-        delim + body.replace(/\\\\/g, "\\") + delim,
+      (_match, delim: string, body: string) => delim + body.replace(/\\\\/g, "\\") + delim,
     );
 
     return { markdown, title };

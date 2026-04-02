@@ -1,4 +1,4 @@
-import { converter, anyOf, byMime, byExt } from "../converter.js";
+import { anyOf, byExt, byMime, converter } from "../converter.js";
 import { decodeBuffer } from "../transforms/decode-text.js";
 
 const ACCEPTED_EXTENSIONS = [".csv"];
@@ -47,7 +47,7 @@ function parseCsv(text: string): string[][] {
   for (const line of lines) {
     if (inQuotes) {
       // Continue the previous field across the newline
-      current += "\n" + line;
+      current += `\n${line}`;
     } else {
       if (current.trim() !== "" || rows.length > 0) {
         if (current.trim() !== "") rows.push(parseCsvLine(current));
@@ -93,9 +93,9 @@ export const csvConverter = converter(
     const mdLines: string[] = [];
 
     // Header row
-    mdLines.push("| " + header.join(" | ") + " |");
+    mdLines.push(`| ${header.join(" | ")} |`);
     // Separator row
-    mdLines.push("| " + header.map(() => "---").join(" | ") + " |");
+    mdLines.push(`| ${header.map(() => "---").join(" | ")} |`);
     // Data rows
     for (let i = 1; i < rows.length; i++) {
       let row = rows[i];
@@ -103,7 +103,7 @@ export const csvConverter = converter(
       while (row.length < numCols) row.push("");
       // Truncate if more columns
       row = row.slice(0, numCols);
-      mdLines.push("| " + row.join(" | ") + " |");
+      mdLines.push(`| ${row.join(" | ")} |`);
     }
 
     return { markdown: mdLines.join("\n") };

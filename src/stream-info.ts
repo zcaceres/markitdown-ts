@@ -4,10 +4,7 @@ import type { StreamInfo } from "./types.js";
  * Merge multiple StreamInfo objects. Later values override earlier ones,
  * but only for non-undefined fields.
  */
-export function mergeStreamInfo(
-  base: StreamInfo,
-  ...overrides: (StreamInfo | undefined)[]
-): StreamInfo {
+export function mergeStreamInfo(base: StreamInfo, ...overrides: (StreamInfo | undefined)[]): StreamInfo {
   const result = { ...base };
   for (const override of overrides) {
     if (!override) continue;
@@ -36,13 +33,10 @@ export function guessMimeFromExtension(ext: string): string | undefined {
     ".csv": "text/csv",
     ".xml": "text/xml",
     ".pdf": "application/pdf",
-    ".docx":
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ".xlsx":
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ".xls": "application/vnd.ms-excel",
-    ".pptx":
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     ".epub": "application/epub+zip",
     ".zip": "application/zip",
     ".ipynb": "application/x-ipynb+json",
@@ -74,13 +68,10 @@ export function guessExtensionFromMime(mime: string): string | undefined {
     "text/csv": ".csv",
     "text/xml": ".xml",
     "application/pdf": ".pdf",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-      ".docx",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-      ".xlsx",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
     "application/vnd.ms-excel": ".xls",
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation":
-      ".pptx",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
     "application/epub+zip": ".epub",
     "application/zip": ".zip",
     "image/jpeg": ".jpg",

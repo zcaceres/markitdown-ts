@@ -1,8 +1,7 @@
-import { describe, test, expect } from "bun:test";
-import path from "node:path";
+import { describe, expect, test } from "bun:test";
 import fs from "node:fs";
+import path from "node:path";
 import { createMarkItDown } from "../../src/markitdown";
-import { exiftoolMetadata } from "../../src/converters/exiftool";
 
 const FIXTURES = path.join(import.meta.dir, "../fixtures");
 

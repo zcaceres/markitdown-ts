@@ -4,14 +4,12 @@
  */
 
 import JSZip from "jszip";
-import { XMLParser, XMLBuilder } from "fast-xml-parser";
-import { oMathToLatex, parseOmmlXml, findAll, type XmlNode } from "./omml.js";
-import { OMML_NS } from "./omml.js";
+import { findAll, OMML_NS, oMathToLatex, parseOmmlXml } from "./omml.js";
 
 const OMML_NS_BRACE = `{${OMML_NS}}`;
 
 const MATH_ROOT_TEMPLATE_PARTS = [
-  '<w:document ',
+  "<w:document ",
   'xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" ',
   'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" ',
   'xmlns:o="urn:schemas-microsoft-com:office:office" ',
@@ -31,7 +29,7 @@ const MATH_ROOT_TEMPLATE_PARTS = [
 ];
 
 function mathRootTemplate(content: string): string {
-  return MATH_ROOT_TEMPLATE_PARTS.join("") + content + "</w:document>";
+  return `${MATH_ROOT_TEMPLATE_PARTS.join("") + content}</w:document>`;
 }
 
 /**
@@ -54,49 +52,39 @@ function preProcessMath(content: string): string {
   // We use regex to find the OMML elements and replace them
 
   // Handle block equations: <m:oMathPara>...</m:oMathPara>
-  content = content.replace(
-    /<m:oMathPara\b[^>]*>([\s\S]*?)<\/m:oMathPara>/g,
-    (_match, inner: string) => {
-      // Find all <m:oMath>...</m:oMath> inside and convert each as block
-      const oMathRegex = /<m:oMath\b[^>]*>[\s\S]*?<\/m:oMath>/g;
-      const parts: string[] = [];
-      let oMathMatch: RegExpExecArray | null;
-      while ((oMathMatch = oMathRegex.exec(inner)) !== null) {
-        try {
-          const latex = convertOmathToLatex(oMathMatch[0]);
-          parts.push(`<w:r><w:t>$$${latex}$$</w:t></w:r>`);
-        } catch {
-          // On error, keep original
-          return _match;
-        }
+  content = content.replace(/<m:oMathPara\b[^>]*>([\s\S]*?)<\/m:oMathPara>/g, (_match, inner: string) => {
+    // Find all <m:oMath>...</m:oMath> inside and convert each as block
+    const oMathRegex = /<m:oMath\b[^>]*>[\s\S]*?<\/m:oMath>/g;
+    const parts: string[] = [];
+    let oMathMatch: RegExpExecArray | null;
+    while ((oMathMatch = oMathRegex.exec(inner)) !== null) {
+      try {
+        const latex = convertOmathToLatex(oMathMatch[0]);
+        parts.push(`<w:r><w:t>$$${latex}$$</w:t></w:r>`);
+      } catch {
+        // On error, keep original
+        return _match;
       }
-      if (parts.length === 0) return _match;
-      return `<w:p>${parts.join("")}</w:p>`;
-    },
-  );
+    }
+    if (parts.length === 0) return _match;
+    return `<w:p>${parts.join("")}</w:p>`;
+  });
 
   // Handle inline equations: <m:oMath>...</m:oMath>
-  content = content.replace(
-    /<m:oMath\b[^>]*>([\s\S]*?)<\/m:oMath>/g,
-    (match) => {
-      try {
-        const latex = convertOmathToLatex(match);
-        return `<w:r><w:t>$${latex}$</w:t></w:r>`;
-      } catch {
-        return match;
-      }
-    },
-  );
+  content = content.replace(/<m:oMath\b[^>]*>([\s\S]*?)<\/m:oMath>/g, (match) => {
+    try {
+      const latex = convertOmathToLatex(match);
+      return `<w:r><w:t>$${latex}$</w:t></w:r>`;
+    } catch {
+      return match;
+    }
+  });
 
   return content;
 }
 
 /** Files within DOCX that may contain math to pre-process */
-const PRE_PROCESS_FILES = [
-  "word/document.xml",
-  "word/footnotes.xml",
-  "word/endnotes.xml",
-];
+const PRE_PROCESS_FILES = ["word/document.xml", "word/footnotes.xml", "word/endnotes.xml"];
 
 /**
  * Pre-process a DOCX buffer to convert OMML math equations to LaTeX.

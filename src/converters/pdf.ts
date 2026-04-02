@@ -1,6 +1,6 @@
-import { converter, anyOf, byMime, byExt } from "../converter.js";
-import path from "node:path";
 import fs from "node:fs";
+import path from "node:path";
+import { anyOf, byExt, byMime, converter } from "../converter.js";
 
 const ACCEPTED_EXTENSIONS = [".pdf"];
 const ACCEPTED_MIME_PREFIXES = ["application/pdf", "application/x-pdf"];
@@ -77,10 +77,7 @@ interface RowInfo {
  * Extract form-style content from a PDF page by analyzing word positions.
  * Returns null if not form-style.
  */
-function extractFormContentFromWords(
-  words: Word[],
-  pageWidth: number,
-): string | null {
+function extractFormContentFromWords(words: Word[], pageWidth: number): string | null {
   if (!words.length) return null;
 
   const yTolerance = 5;
@@ -88,7 +85,10 @@ function extractFormContentFromWords(
   for (const word of words) {
     const yKey = Math.round(word.top / yTolerance) * yTolerance;
     let arr = rowsByY.get(yKey);
-    if (!arr) { arr = []; rowsByY.set(yKey, arr); }
+    if (!arr) {
+      arr = [];
+      rowsByY.set(yKey, arr);
+    }
     arr.push(word);
   }
 
@@ -121,8 +121,13 @@ function extractFormContentFromWords(
     }
 
     rowInfo.push({
-      yKey, words: rowWords, text: combinedText, xGroups,
-      isParagraph, numColumns: xGroups.length, hasPartialNumbering,
+      yKey,
+      words: rowWords,
+      text: combinedText,
+      xGroups,
+      isParagraph,
+      numColumns: xGroups.length,
+      hasPartialNumbering,
     });
   }
 
@@ -196,7 +201,9 @@ function extractFormContentFromWords(
       const start = i;
       while (i < rowInfo.length && rowInfo[i].isTableRow) i++;
       tableRegions.push([start, i]);
-    } else { i++; }
+    } else {
+      i++;
+    }
   }
 
   const totalTableRows = tableRegions.reduce((sum, [s, e]) => sum + (e - s), 0);
@@ -212,9 +219,7 @@ function extractFormContentFromWords(
           break;
         }
       }
-      cells[assignedCol] = cells[assignedCol]
-        ? cells[assignedCol] + " " + word.text
-        : word.text;
+      cells[assignedCol] = cells[assignedCol] ? `${cells[assignedCol]} ${word.text}` : word.text;
     }
     return cells;
   }
@@ -234,16 +239,10 @@ function extractFormContentFromWords(
           Math.max(3, ...tableData.map((row) => (row[col] || "").length)),
         );
         const header = tableData[0];
-        resultLines.push(
-          "| " + header.map((cell, ci) => cell.padEnd(colWidths[ci])).join(" | ") + " |",
-        );
-        resultLines.push(
-          "| " + colWidths.map((w) => "-".repeat(w)).join(" | ") + " |",
-        );
+        resultLines.push(`| ${header.map((cell, ci) => cell.padEnd(colWidths[ci])).join(" | ")} |`);
+        resultLines.push(`| ${colWidths.map((w) => "-".repeat(w)).join(" | ")} |`);
         for (const row of tableData.slice(1)) {
-          resultLines.push(
-            "| " + row.map((cell, ci) => cell.padEnd(colWidths[ci])).join(" | ") + " |",
-          );
+          resultLines.push(`| ${row.map((cell, ci) => cell.padEnd(colWidths[ci])).join(" | ")} |`);
         }
       }
       idx = end;
@@ -271,10 +270,7 @@ async function initPdfplumber(): Promise<any> {
         "./pdfplumber_wasm_bg.js": {},
       };
       for (const [key, value] of Object.entries(bgModule)) {
-        if (
-          (key.startsWith("__wbg_") || key.startsWith("__wbindgen_")) &&
-          typeof value === "function"
-        ) {
+        if ((key.startsWith("__wbg_") || key.startsWith("__wbindgen_")) && typeof value === "function") {
           imports["./pdfplumber_wasm_bg.js"][key] = value;
         }
       }
@@ -323,7 +319,7 @@ export const pdfConverter = converter(
             if (pageContent === null) {
               plainPages++;
               const text = page.extractText();
-              if (text && text.trim()) markdownChunks.push(text.trim());
+              if (text?.trim()) markdownChunks.push(text.trim());
             } else {
               formPages++;
               if (pageContent.trim()) markdownChunks.push(pageContent);

@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import path from "node:path";
 import { createMarkItDown } from "../../src/markitdown";
 
@@ -16,22 +16,16 @@ describe("PPTX converter", () => {
     expect(result.markdown).toContain("1b92870d-e3b5-4e65-8153-919f4ff45592");
 
     // Title
-    expect(result.markdown).toContain(
-      "AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation",
-    );
+    expect(result.markdown).toContain("AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation");
 
     // Chart data
     expect(result.markdown).toContain("a3f6004b-6f4f-4ea8-bee3-3741f4dc385f");
     expect(result.markdown).toContain("2003");
 
     // Image with alt text caption
-    expect(result.markdown).toContain(
-      "![This phrase of the caption is Human-written.]",
-    );
+    expect(result.markdown).toContain("![This phrase of the caption is Human-written.]");
 
     // Must not include base64 image data
-    expect(result.markdown).not.toContain(
-      "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQE",
-    );
+    expect(result.markdown).not.toContain("data:image/jpeg;base64,/9j/4AAQSkZJRgABAQE");
   });
 });
