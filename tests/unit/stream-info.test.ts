@@ -1,5 +1,5 @@
-import { describe, test, expect } from "bun:test";
-import { mergeStreamInfo, guessMimeFromExtension, guessExtensionFromMime } from "../../src/stream-info";
+import { describe, expect, test } from "bun:test";
+import { guessExtensionFromMime, guessMimeFromExtension, mergeStreamInfo } from "../../src/stream-info";
 
 describe("mergeStreamInfo", () => {
   test("returns base when no overrides", () => {
@@ -24,11 +24,7 @@ describe("mergeStreamInfo", () => {
 
   test("merges multiple overrides in order", () => {
     const base = { mimetype: "text/plain" };
-    const result = mergeStreamInfo(
-      base,
-      { charset: "utf-8" },
-      { mimetype: "text/html", filename: "test.html" },
-    );
+    const result = mergeStreamInfo(base, { charset: "utf-8" }, { mimetype: "text/html", filename: "test.html" });
     expect(result.mimetype).toBe("text/html");
     expect(result.charset).toBe("utf-8");
     expect(result.filename).toBe("test.html");

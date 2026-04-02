@@ -1,6 +1,6 @@
-import { describe, test, expect } from "bun:test";
-import path from "node:path";
+import { describe, expect, test } from "bun:test";
 import fs from "node:fs";
+import path from "node:path";
 import { createMarkItDown } from "../../src/markitdown";
 
 const FIXTURES = path.join(import.meta.dir, "../fixtures");
@@ -27,23 +27,18 @@ describe("YouTube converter", () => {
     expect(result.markdown).toContain("1234567");
     expect(result.markdown).toContain("test, video, markitdown");
     expect(result.markdown).toContain("PT5M30S");
-    expect(result.markdown).toContain(
-      "This is a test video description for unit testing.",
-    );
+    expect(result.markdown).toContain("This is a test video description for unit testing.");
   });
 
   test("extracts title from og:title meta tag", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "test_youtube.html"),
-      {
-        streamInfo: {
-          url: "https://www.youtube.com/watch?v=V2qZ_lgxTzg",
-          mimetype: "text/html",
-          extension: ".html",
-        },
+    const result = await md.convert(path.join(FIXTURES, "test_youtube.html"), {
+      streamInfo: {
+        url: "https://www.youtube.com/watch?v=V2qZ_lgxTzg",
+        mimetype: "text/html",
+        extension: ".html",
       },
-    );
+    });
 
     // Title should be returned in result
     expect(result.title).toBeDefined();

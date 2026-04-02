@@ -1,9 +1,9 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import {
+  FileConversionError,
   MarkItDownError,
   MissingDependencyError,
   UnsupportedFormatError,
-  FileConversionError,
 } from "../../src/exceptions";
 
 describe("exceptions", () => {

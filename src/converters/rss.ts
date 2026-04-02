@@ -1,14 +1,9 @@
-import { converter, anyOf, byMime, byExt } from "../converter.js";
+import { XMLParser } from "fast-xml-parser";
+import { anyOf, byExt, byMime, converter } from "../converter.js";
 import { decodeBuffer } from "../transforms/decode-text.js";
 import { htmlToMarkdown } from "../transforms/html-to-markdown.js";
-import { XMLParser } from "fast-xml-parser";
 
-const PRECISE_MIME_PREFIXES = [
-  "application/rss",
-  "application/rss+xml",
-  "application/atom",
-  "application/atom+xml",
-];
+const PRECISE_MIME_PREFIXES = ["application/rss", "application/rss+xml", "application/atom", "application/atom+xml"];
 const PRECISE_EXTENSIONS = [".rss", ".atom"];
 const CANDIDATE_MIME_PREFIXES = ["text/xml", "application/xml"];
 const CANDIDATE_EXTENSIONS = [".xml"];
@@ -33,10 +28,10 @@ function parseContent(content: string): string {
 }
 
 function detectFeedType(parsed: any): "rss" | "atom" | null {
-  if (parsed["rss"]) return "rss";
-  if (parsed["feed"]) {
-    const feed = parsed["feed"];
-    if (feed["entry"] || (Array.isArray(feed) && feed.some((f: any) => f["entry"]))) {
+  if (parsed.rss) return "rss";
+  if (parsed.feed) {
+    const feed = parsed.feed;
+    if (feed.entry || (Array.isArray(feed) && feed.some((f: any) => f.entry))) {
       return "atom";
     }
   }
@@ -63,9 +58,7 @@ export const rssConverter = converter(
     (ctx) => {
       const mime = (ctx.info.mimetype ?? "").toLowerCase();
       const ext = (ctx.info.extension ?? "").toLowerCase();
-      const isCandidate =
-        CANDIDATE_EXTENSIONS.includes(ext) ||
-        CANDIDATE_MIME_PREFIXES.some((p) => mime.startsWith(p));
+      const isCandidate = CANDIDATE_EXTENSIONS.includes(ext) || CANDIDATE_MIME_PREFIXES.some((p) => mime.startsWith(p));
       if (!isCandidate) return false;
       return looksLikeFeed(ctx.buffer, ctx.info.charset);
     },
@@ -90,8 +83,8 @@ export const rssConverter = converter(
 );
 
 function parseRss(parsed: any): { markdown: string; title?: string } {
-  const rss = parsed["rss"];
-  const channel = rss["channel"];
+  const rss = parsed.rss;
+  const channel = rss.channel;
   if (!channel) throw new Error("No channel found in RSS feed");
 
   const channelTitle = getFirstTextChild(channel, "title");
@@ -101,16 +94,17 @@ function parseRss(parsed: any): { markdown: string; title?: string } {
   if (channelTitle) md += `# ${channelTitle}\n`;
   if (channelDescription) md += `${channelDescription}\n`;
 
-  let items = channel["item"];
+  let items = channel.item;
   if (items && !Array.isArray(items)) items = [items];
   if (items) {
     for (const item of items) {
       const title = getFirstTextChild(item, "title");
-      const description = getFirstTextChild(item, "description") ||
-                          (item["description"]?.["__cdata"] ? String(item["description"]["__cdata"]) : null);
+      const description =
+        getFirstTextChild(item, "description") || (item.description?.__cdata ? String(item.description.__cdata) : null);
       const pubDate = getFirstTextChild(item, "pubDate");
-      const content = getFirstTextChild(item, "content:encoded") ||
-                      (item["content:encoded"]?.["__cdata"] ? String(item["content:encoded"]["__cdata"]) : null);
+      const content =
+        getFirstTextChild(item, "content:encoded") ||
+        (item["content:encoded"]?.__cdata ? String(item["content:encoded"].__cdata) : null);
 
       if (title) md += `\n## ${title}\n`;
       if (pubDate) md += `Published on: ${pubDate}\n`;
@@ -123,7 +117,7 @@ function parseRss(parsed: any): { markdown: string; title?: string } {
 }
 
 function parseAtom(parsed: any): { markdown: string; title?: string } {
-  const feed = parsed["feed"];
+  const feed = parsed.feed;
   const title = getFirstTextChild(feed, "title");
   const subtitle = getFirstTextChild(feed, "subtitle");
 
@@ -131,7 +125,7 @@ function parseAtom(parsed: any): { markdown: string; title?: string } {
   if (title) md += `# ${title}\n`;
   if (subtitle) md += `${subtitle}\n`;
 
-  let entries = feed["entry"];
+  let entries = feed.entry;
   if (entries && !Array.isArray(entries)) entries = [entries];
   if (entries) {
     for (const entry of entries) {

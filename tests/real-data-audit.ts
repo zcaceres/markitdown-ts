@@ -4,9 +4,10 @@
  *
  * This is NOT a test suite — it's a visual inspection tool to verify output quality.
  */
-import { createMarkItDown } from "../src/markitdown.js";
-import path from "node:path";
+
 import fs from "node:fs";
+import path from "node:path";
+import { createMarkItDown } from "../src/markitdown.js";
 
 const FIXTURES_DIR = path.join(import.meta.dir, "fixtures");
 
@@ -114,18 +115,20 @@ async function main() {
   console.log(`  ${"─".repeat(50)} ${"─".repeat(10)} ${"─".repeat(8)} ${"─".repeat(8)} ${"─".repeat(8)}`);
   for (const r of results) {
     const status = r.status === "OK" ? "OK" : r.status.startsWith("ERROR") ? "ERROR" : r.status;
-    console.log(`  ${r.file.padEnd(50)} ${status.padEnd(10)} ${String(r.chars).padEnd(8)} ${String(r.lines).padEnd(8)} ${r.time.toFixed(0)}ms`);
+    console.log(
+      `  ${r.file.padEnd(50)} ${status.padEnd(10)} ${String(r.chars).padEnd(8)} ${String(r.lines).padEnd(8)} ${r.time.toFixed(0)}ms`,
+    );
   }
 
-  const ok = results.filter(r => r.status === "OK").length;
-  const errors = results.filter(r => r.status.startsWith("ERROR")).length;
-  const missing = results.filter(r => r.status === "MISSING").length;
+  const ok = results.filter((r) => r.status === "OK").length;
+  const errors = results.filter((r) => r.status.startsWith("ERROR")).length;
+  const missing = results.filter((r) => r.status === "MISSING").length;
   console.log("");
   console.log(`  Total: ${results.length} | OK: ${ok} | Errors: ${errors} | Missing: ${missing}`);
   console.log("");
 
   // Flag suspicious results
-  const suspicious = results.filter(r => r.status === "OK" && (r.chars < 10 || r.lines < 2));
+  const suspicious = results.filter((r) => r.status === "OK" && (r.chars < 10 || r.lines < 2));
   if (suspicious.length) {
     console.log("  ⚠️  SUSPICIOUSLY SHORT OUTPUT:");
     for (const s of suspicious) {
@@ -135,7 +138,7 @@ async function main() {
   }
 
   // Flag very slow conversions
-  const slow = results.filter(r => r.time > 5000);
+  const slow = results.filter((r) => r.time > 5000);
   if (slow.length) {
     console.log("  🐌 SLOW CONVERSIONS (>5s):");
     for (const s of slow) {

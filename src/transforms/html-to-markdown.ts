@@ -50,13 +50,13 @@ function createTurndownService(opts?: ConvertOptions): TurndownService {
     filter: "img",
     replacement(_content, node) {
       const el = node as HTMLImageElement;
-      let alt = (el.getAttribute("alt") || "").replace(/\n/g, " ");
+      const alt = (el.getAttribute("alt") || "").replace(/\n/g, " ");
       let src = el.getAttribute("src") || el.getAttribute("data-src") || "";
       const title = el.getAttribute("title") || "";
 
       // Truncate data URIs unless keep_data_uris is set
       if (src.startsWith("data:") && !opts?.keepDataUris) {
-        src = src.split(",")[0] + "...";
+        src = `${src.split(",")[0]}...`;
       }
 
       const titlePart = title ? ` "${title.replace(/"/g, '\\"')}"` : "";
@@ -68,10 +68,7 @@ function createTurndownService(opts?: ConvertOptions): TurndownService {
   td.addRule("listItem", {
     filter: "li",
     replacement(content, node, options) {
-      content = content
-        .replace(/^\n+/, "")
-        .replace(/\n+$/, "\n")
-        .replace(/\n/gm, "\n  ");
+      content = content.replace(/^\n+/, "").replace(/\n+$/, "\n").replace(/\n/gm, "\n  ");
 
       const parent = node.parentNode as HTMLElement;
       const isOrdered = parent?.nodeName === "OL";
@@ -81,9 +78,9 @@ function createTurndownService(opts?: ConvertOptions): TurndownService {
         const start = parent.getAttribute("start");
         const index = Array.prototype.indexOf.call(parent.children, node);
         const num = (start ? parseInt(start, 10) : 1) + index;
-        prefix = num + ". ";
+        prefix = `${num}. `;
       } else {
-        prefix = options.bulletListMarker + " ";
+        prefix = `${options.bulletListMarker} `;
       }
 
       return prefix + content + (node.nextSibling ? "\n" : "");
@@ -94,31 +91,28 @@ function createTurndownService(opts?: ConvertOptions): TurndownService {
   td.addRule("definitionList", {
     filter: "dl",
     replacement(content) {
-      return "\n\n" + content + "\n\n";
+      return `\n\n${content}\n\n`;
     },
   });
 
   td.addRule("definitionTerm", {
     filter: "dt",
     replacement(content) {
-      return "\n" + content + "\n";
+      return `\n${content}\n`;
     },
   });
 
   td.addRule("definitionDescription", {
     filter: "dd",
     replacement(content) {
-      return ":   " + content.trim() + "\n";
+      return `:   ${content.trim()}\n`;
     },
   });
 
   // Custom rule: convert checkboxes
   td.addRule("checkboxes", {
     filter(node) {
-      return (
-        node.nodeName === "INPUT" &&
-        (node as HTMLInputElement).getAttribute("type") === "checkbox"
-      );
+      return node.nodeName === "INPUT" && (node as HTMLInputElement).getAttribute("type") === "checkbox";
     },
     replacement(_content, node) {
       const el = node as HTMLInputElement;
@@ -129,10 +123,7 @@ function createTurndownService(opts?: ConvertOptions): TurndownService {
   return td;
 }
 
-export function htmlToMarkdown(
-  html: string,
-  opts?: ConvertOptions,
-): { markdown: string; title?: string } {
+export function htmlToMarkdown(html: string, opts?: ConvertOptions): { markdown: string; title?: string } {
   const $ = cheerio.load(html);
 
   // Remove script and style elements
@@ -145,7 +136,7 @@ export function htmlToMarkdown(
   $("td, th").each((_, el) => {
     const $el = $(el);
     $el.find("> p").each((_, p) => {
-      $(p).replaceWith($(p).html() + " ");
+      $(p).replaceWith(`${$(p).html()} `);
     });
     $el.html(($el.html() || "").trim());
   });
@@ -179,7 +170,9 @@ export function htmlToMarkdown(
       const remainingRows = $table.find("> tr");
       if (remainingRows.length) {
         const $newTbody = $("<tbody>");
-        remainingRows.each((_, row) => { $newTbody.append($(row)); });
+        remainingRows.each((_, row) => {
+          $newTbody.append($(row));
+        });
         $table.append($newTbody);
       }
     }

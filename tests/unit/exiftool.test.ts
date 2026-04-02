@@ -1,6 +1,6 @@
-import { describe, test, expect } from "bun:test";
-import path from "node:path";
+import { describe, expect, test } from "bun:test";
 import fs from "node:fs";
+import path from "node:path";
 import { exiftoolMetadata } from "../../src/converters/exiftool";
 
 const FIXTURES = path.join(import.meta.dir, "../fixtures");
@@ -22,9 +22,9 @@ describe("exiftoolMetadata", () => {
   });
 
   test("throws for nonexistent exiftool path", async () => {
-    await expect(
-      exiftoolMetadata(Buffer.from("test"), "/nonexistent/exiftool"),
-    ).rejects.toThrow("Failed to verify ExifTool version.");
+    await expect(exiftoolMetadata(Buffer.from("test"), "/nonexistent/exiftool")).rejects.toThrow(
+      "Failed to verify ExifTool version.",
+    );
   });
 
   test("with real exiftool returns non-empty record for test.jpg", async () => {

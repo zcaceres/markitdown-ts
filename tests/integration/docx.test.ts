@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import path from "node:path";
 import { createMarkItDown } from "../../src/markitdown";
 
@@ -16,23 +16,17 @@ describe("DOCX converter", () => {
     // Must include headings
     expect(result.markdown).toContain("Abstract");
     expect(result.markdown).toContain("Introduction");
-    expect(result.markdown).toContain(
-      "AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation",
-    );
+    expect(result.markdown).toContain("AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation");
 
     // Data URIs should be truncated
     expect(result.markdown).toContain("data:image/png;base64...");
-    expect(result.markdown).not.toContain(
-      "data:image/png;base64,iVBORw0KGgoAAAANSU",
-    );
+    expect(result.markdown).not.toContain("data:image/png;base64,iVBORw0KGgoAAAANSU");
   });
 
   test("converts test.docx with keep_data_uris", async () => {
     const md = createMarkItDown({ keepDataUris: true });
     const result = await md.convert(path.join(FIXTURES, "test.docx"));
-    expect(result.markdown).toContain(
-      "data:image/png;base64,iVBORw0KGgoAAAANSU",
-    );
+    expect(result.markdown).toContain("data:image/png;base64,iVBORw0KGgoAAAANSU");
     expect(result.markdown).not.toContain("data:image/png;base64...");
   });
 
@@ -54,9 +48,7 @@ describe("DOCX converter", () => {
 
   test("converts test_with_comment.docx with styleMap", async () => {
     const md = createMarkItDown({ styleMap: "comment-reference => " });
-    const result = await md.convert(
-      path.join(FIXTURES, "test_with_comment.docx"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "test_with_comment.docx"));
     // Should contain the comment text
     expect(result.markdown).toContain("This is a test comment. 12df-321a");
     expect(result.markdown).toContain("55yiyi-asd09");

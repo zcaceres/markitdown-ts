@@ -10,8 +10,7 @@ export interface FileTestVector {
 export const GENERAL_TEST_VECTORS: FileTestVector[] = [
   {
     filename: "test.docx",
-    mimetype:
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    mimetype: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     charset: null,
     url: null,
     mustInclude: [
@@ -27,8 +26,7 @@ export const GENERAL_TEST_VECTORS: FileTestVector[] = [
   },
   {
     filename: "test.xlsx",
-    mimetype:
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    mimetype: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     charset: null,
     url: null,
     mustInclude: [
@@ -52,8 +50,7 @@ export const GENERAL_TEST_VECTORS: FileTestVector[] = [
   },
   {
     filename: "test.pptx",
-    mimetype:
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    mimetype: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     charset: null,
     url: null,
     mustInclude: [
@@ -88,9 +85,7 @@ export const GENERAL_TEST_VECTORS: FileTestVector[] = [
     mimetype: "application/pdf",
     charset: null,
     url: null,
-    mustInclude: [
-      "While there is contemporaneous exploration of multi-agent approaches",
-    ],
+    mustInclude: ["While there is contemporaneous exploration of multi-agent approaches"],
     mustNotInclude: [],
   },
   {
@@ -113,11 +108,7 @@ export const GENERAL_TEST_VECTORS: FileTestVector[] = [
       "Microsoft entered the operating system (OS) business in 1980 with its own version of [Unix]",
       'Microsoft was founded by [Bill Gates](/wiki/Bill_Gates "Bill Gates")',
     ],
-    mustNotInclude: [
-      "You are encouraged to create an account and log in",
-      "154 languages",
-      "move to sidebar",
-    ],
+    mustNotInclude: ["You are encouraged to create an account and log in", "154 languages", "move to sidebar"],
   },
   {
     filename: "test_serp.html",
@@ -129,10 +120,7 @@ export const GENERAL_TEST_VECTORS: FileTestVector[] = [
       "Microsoft Corporation is **an American multinational corporation and technology company headquartered** in Redmond",
       "1995–2007: Foray into the Web, Windows 95, Windows XP, and Xbox",
     ],
-    mustNotInclude: [
-      "https://www.bing.com/ck/a?!&&p=",
-      "data:image/svg+xml,%3Csvg%20width%3D",
-    ],
+    mustNotInclude: ["https://www.bing.com/ck/a?!&&p=", "data:image/svg+xml,%3Csvg%20width%3D"],
   },
   {
     filename: "test_mskanji.csv",
@@ -153,10 +141,7 @@ export const GENERAL_TEST_VECTORS: FileTestVector[] = [
     mimetype: "application/json",
     charset: "ascii",
     url: null,
-    mustInclude: [
-      "5b64c88c-b3c3-4510-bcb8-da0b200602d8",
-      "9700dc99-6685-40b4-9a3a-5e406dcb37f3",
-    ],
+    mustInclude: ["5b64c88c-b3c3-4510-bcb8-da0b200602d8", "9700dc99-6685-40b4-9a3a-5e406dcb37f3"],
     mustNotInclude: [],
   },
   {
@@ -176,13 +161,7 @@ export const GENERAL_TEST_VECTORS: FileTestVector[] = [
     mimetype: "application/json",
     charset: "ascii",
     url: null,
-    mustInclude: [
-      "# Test Notebook",
-      "```python",
-      'print("markitdown")',
-      "```",
-      "## Code Cell Below",
-    ],
+    mustInclude: ["# Test Notebook", "```python", 'print("markitdown")', "```", "## Code Cell Below"],
     mustNotInclude: ["nbformat", "nbformat_minor"],
   },
   {

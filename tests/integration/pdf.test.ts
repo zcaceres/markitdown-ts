@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import path from "node:path";
 import { createMarkItDown } from "../../src/markitdown";
 
@@ -9,11 +9,7 @@ const FIXTURES = path.join(import.meta.dir, "../fixtures");
 // ============================================================
 
 /** Validate that markdown contains all expected strings and none of the excluded strings */
-function validateStrings(
-  markdown: string,
-  expected: string[],
-  excluded?: string[],
-): void {
+function validateStrings(markdown: string, expected: string[], excluded?: string[]): void {
   for (const s of expected) {
     expect(markdown).toContain(s);
   }
@@ -45,9 +41,7 @@ function extractMarkdownTables(text: string): string[][] {
 
 /** Validate table rows have consistent column count (ignoring separator rows) */
 function validateTableStructure(table: string[]): void {
-  const dataCols = table
-    .filter((row) => !row.match(/^\|[\s-|]+\|$/))
-    .map((row) => row.split("|").length);
+  const dataCols = table.filter((row) => !row.match(/^\|[\s-|]+\|$/)).map((row) => row.split("|").length);
   if (dataCols.length > 1) {
     for (const count of dataCols) {
       expect(count).toBe(dataCols[0]);
@@ -63,62 +57,46 @@ describe("PDF converter", () => {
   test("converts test.pdf (academic paper, no false tables)", async () => {
     const md = createMarkItDown();
     const result = await md.convert(path.join(FIXTURES, "test.pdf"));
-    expect(result.markdown).toContain(
-      "While there is contemporaneous exploration of multi-agent approaches",
-    );
+    expect(result.markdown).toContain("While there is contemporaneous exploration of multi-agent approaches");
     // Academic paper should NOT have pipe characters (no table extraction)
-    const pipeLines = result.markdown
-      .split("\n")
-      .filter((l) => l.startsWith("|") && l.endsWith("|"));
+    const pipeLines = result.markdown.split("\n").filter((l) => l.startsWith("|") && l.endsWith("|"));
     expect(pipeLines.length).toBe(0);
   });
 
   test("converts borderless table PDF with pipe-separated cells", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "SPARSE-2024-INV-1234_borderless_table.pdf"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "SPARSE-2024-INV-1234_borderless_table.pdf"));
     expect(result.markdown).toContain("|");
     expect(result.markdown).toContain("---");
   });
 
   test("converts receipt PDF", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "RECEIPT-2024-TXN-98765_retail_purchase.pdf"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "RECEIPT-2024-TXN-98765_retail_purchase.pdf"));
     expect(result.markdown.length).toBeGreaterThan(50);
   });
 
   test("converts multipage invoice PDF", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "REPAIR-2022-INV-001_multipage.pdf"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "REPAIR-2022-INV-001_multipage.pdf"));
     expect(result.markdown.length).toBeGreaterThan(100);
   });
 
   test("handles scanned PDF (no text layer) gracefully", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "MEDRPT-2024-PAT-3847_medical_report_scan.pdf"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "MEDRPT-2024-PAT-3847_medical_report_scan.pdf"));
     expect(typeof result.markdown).toBe("string");
   });
 
   test("converts movie theater booking PDF", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "movie-theater-booking-2024.pdf"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "movie-theater-booking-2024.pdf"));
     expect(result.markdown.length).toBeGreaterThan(50);
   });
 
   test("merges MasterFormat partial numbering", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "masterformat_partial_numbering.pdf"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "masterformat_partial_numbering.pdf"));
     const lines = result.markdown.split("\n");
     const isolatedNumberings = lines.filter((l) => /^\.\d+$/.test(l.trim()));
     expect(isolatedNumberings.length).toBe(0);
@@ -134,29 +112,16 @@ describe("PDF borderless table content validation", () => {
 
   test("setup: convert borderless table PDF", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "SPARSE-2024-INV-1234_borderless_table.pdf"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "SPARSE-2024-INV-1234_borderless_table.pdf"));
     markdown = result.markdown;
   });
 
   test("contains expected SKU codes", () => {
-    validateStrings(markdown, [
-      "SKU-8847",
-      "SKU-9201",
-      "SKU-4563",
-      "SKU-7728",
-    ]);
+    validateStrings(markdown, ["SKU-8847", "SKU-9201", "SKU-4563", "SKU-7728"]);
   });
 
   test("contains table headers", () => {
-    validateStrings(markdown, [
-      "Product",
-      "Code",
-      "Location",
-      "Expected",
-      "Actual",
-    ]);
+    validateStrings(markdown, ["Product", "Code", "Location", "Expected", "Actual"]);
   });
 
   test("contains cost values", () => {
@@ -191,14 +156,7 @@ describe("PDF borderless table content validation", () => {
   });
 
   test("extended review table has expected data", () => {
-    validateStrings(markdown, [
-      "$13,005.00",
-      "$25,285.00",
-      "$18,720.00",
-      "Verified",
-      "High Value",
-      "Pending",
-    ]);
+    validateStrings(markdown, ["$13,005.00", "$25,285.00", "$18,720.00", "Verified", "High Value", "Pending"]);
   });
 });
 
@@ -211,9 +169,7 @@ describe("PDF receipt content validation", () => {
 
   test("setup: convert receipt PDF", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "RECEIPT-2024-TXN-98765_retail_purchase.pdf"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "RECEIPT-2024-TXN-98765_retail_purchase.pdf"));
     markdown = result.markdown;
   });
 
@@ -251,9 +207,7 @@ describe("PDF multipage invoice content validation", () => {
 
   test("setup: convert multipage invoice PDF", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "REPAIR-2022-INV-001_multipage.pdf"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "REPAIR-2022-INV-001_multipage.pdf"));
     markdown = result.markdown;
   });
 
@@ -274,19 +228,13 @@ describe("PDF multipage invoice content validation", () => {
   });
 
   test("has pipe-separated table format", () => {
-    const pipeLines = markdown
-      .split("\n")
-      .filter((l) => l.trim().startsWith("|") && l.trim().endsWith("|"));
+    const pipeLines = markdown.split("\n").filter((l) => l.trim().startsWith("|") && l.trim().endsWith("|"));
     expect(pipeLines.length).toBeGreaterThan(10);
   });
 
   test("has rows with 3+ columns", () => {
-    const pipeLines = markdown
-      .split("\n")
-      .filter((l) => l.trim().startsWith("|") && l.trim().endsWith("|"));
-    const multiColRows = pipeLines.filter(
-      (l) => l.split("|").filter((c) => c.trim()).length >= 3,
-    );
+    const pipeLines = markdown.split("\n").filter((l) => l.trim().startsWith("|") && l.trim().endsWith("|"));
+    const multiColRows = pipeLines.filter((l) => l.split("|").filter((c) => c.trim()).length >= 3);
     expect(multiColRows.length).toBeGreaterThan(5);
   });
 });
@@ -300,9 +248,7 @@ describe("PDF movie theater booking content validation", () => {
 
   test("setup: convert movie theater booking PDF", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "movie-theater-booking-2024.pdf"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "movie-theater-booking-2024.pdf"));
     markdown = result.markdown;
   });
 
@@ -321,8 +267,10 @@ describe("PDF movie theater booking content validation", () => {
   test("contains pricing info", () => {
     // Check for pricing values present in the document
     expect(
-      markdown.includes("$12,500") || markdown.includes("12,500") ||
-      markdown.includes("$11,250") || markdown.includes("11,250"),
+      markdown.includes("$12,500") ||
+        markdown.includes("12,500") ||
+        markdown.includes("$11,250") ||
+        markdown.includes("11,250"),
     ).toBe(true);
   });
 });
@@ -334,9 +282,7 @@ describe("PDF movie theater booking content validation", () => {
 describe("PDF table structure consistency", () => {
   test("borderless table: has pipes, header, and SKUs", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "SPARSE-2024-INV-1234_borderless_table.pdf"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "SPARSE-2024-INV-1234_borderless_table.pdf"));
     expect(result.markdown).toContain("|");
     expect(result.markdown).toContain("Product");
     expect(result.markdown).toContain("SKU-8847");
@@ -345,25 +291,17 @@ describe("PDF table structure consistency", () => {
 
   test("multipage invoice: >10 pipe rows with >5 having 3+ columns", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "REPAIR-2022-INV-001_multipage.pdf"),
-    );
-    const pipeLines = result.markdown
-      .split("\n")
-      .filter((l) => l.trim().startsWith("|") && l.trim().endsWith("|"));
+    const result = await md.convert(path.join(FIXTURES, "REPAIR-2022-INV-001_multipage.pdf"));
+    const pipeLines = result.markdown.split("\n").filter((l) => l.trim().startsWith("|") && l.trim().endsWith("|"));
     expect(pipeLines.length).toBeGreaterThan(10);
 
-    const multiCol = pipeLines.filter(
-      (l) => l.split("|").filter((c) => c.trim()).length >= 3,
-    );
+    const multiCol = pipeLines.filter((l) => l.split("|").filter((c) => c.trim()).length >= 3);
     expect(multiCol.length).toBeGreaterThan(5);
   });
 
   test("scanned PDF: empty or no tables", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "MEDRPT-2024-PAT-3847_medical_report_scan.pdf"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "MEDRPT-2024-PAT-3847_medical_report_scan.pdf"));
     const tables = extractMarkdownTables(result.markdown);
     // Scanned PDF has no text layer, so no tables
     expect(tables.length).toBe(0);
@@ -371,9 +309,7 @@ describe("PDF table structure consistency", () => {
 
   test("borderless table has consistent column counts within each table", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "SPARSE-2024-INV-1234_borderless_table.pdf"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "SPARSE-2024-INV-1234_borderless_table.pdf"));
     const tables = extractMarkdownTables(result.markdown);
     for (const table of tables) {
       validateTableStructure(table);
@@ -407,19 +343,9 @@ describe("PDF MasterFormat detailed tests", () => {
 
   test("MasterFormat content is preserved", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "masterformat_partial_numbering.pdf"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "masterformat_partial_numbering.pdf"));
 
-    validateStrings(result.markdown, [
-      "RFP",
-      "Section",
-      "00 00 43",
-      "Ken Sargent",
-      "House",
-      "GRANDE",
-      "PRAIRIE",
-    ]);
+    validateStrings(result.markdown, ["RFP", "Section", "00 00 43", "Ken Sargent", "House", "GRANDE", "PRAIRIE"]);
 
     // Merged partial numberings should have text after them
     expect(result.markdown).toMatch(/\.1 .+/);
@@ -428,9 +354,7 @@ describe("PDF MasterFormat detailed tests", () => {
 
   test("multiple partial numberings all merged", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "masterformat_partial_numbering.pdf"),
-    );
+    const result = await md.convert(path.join(FIXTURES, "masterformat_partial_numbering.pdf"));
     const lines = result.markdown.split("\n");
 
     // Count merged numberings (lines starting with .N followed by text)

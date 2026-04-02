@@ -1,18 +1,19 @@
-import { converter, anyOf, byMime, byExt } from "../converter.js";
-import { htmlToMarkdown } from "../transforms/html-to-markdown.js";
-import JSZip from "jszip";
 import { XMLParser } from "fast-xml-parser";
+import JSZip from "jszip";
+import { anyOf, byExt, byMime, converter } from "../converter.js";
+import { htmlToMarkdown } from "../transforms/html-to-markdown.js";
 
 const ACCEPTED_EXTENSIONS = [".pptx"];
-const ACCEPTED_MIME_PREFIXES = [
-  "application/vnd.openxmlformats-officedocument.presentationml",
-];
+const ACCEPTED_MIME_PREFIXES = ["application/vnd.openxmlformats-officedocument.presentationml"];
 
-const RELS_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
-const A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
+const _RELS_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+const _A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
 
 function escapeMarkdown(text: string): string {
-  return text.replace(/[\r\n\[\]]/g, " ").replace(/\s+/g, " ").trim();
+  return text
+    .replace(/[\r\n[\]]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function collectText(node: any): string {
@@ -64,8 +65,8 @@ function collectTextNsStripped(node: any): string {
   if (node["#text"] !== undefined) results.push(String(node["#text"]));
 
   // With removeNSPrefix, "a:t" becomes "t"
-  if (node["t"] !== undefined) {
-    const t = node["t"];
+  if (node.t !== undefined) {
+    const t = node.t;
     if (typeof t === "string" || typeof t === "number") {
       results.push(String(t));
     } else if (Array.isArray(t)) {
@@ -138,10 +139,7 @@ function extractTable(graphicFrame: any): string {
     const cellsHtml = cells
       .map((cell: any) => {
         const text = collectText(cell);
-        const escaped = text
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;");
+        const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         return `<${tag}>${escaped}</${tag}>`;
       })
       .join("");
@@ -150,7 +148,7 @@ function extractTable(graphicFrame: any): string {
   }
 
   const html = `<html><body><table>${htmlRows.join("")}</table></body></html>`;
-  return htmlToMarkdown(html).markdown.trim() + "\n";
+  return `${htmlToMarkdown(html).markdown.trim()}\n`;
 }
 
 function extractChartData(chartXml: string): string {
@@ -162,21 +160,21 @@ function extractChartData(chartXml: string): string {
   const chart = parser.parse(chartXml);
 
   try {
-    const chartSpace = chart["chartSpace"] || chart["c:chartSpace"];
+    const chartSpace = chart.chartSpace || chart["c:chartSpace"];
     if (!chartSpace) return "\n\n[chart]\n\n";
 
-    const chartEl = chartSpace["chart"] || chartSpace["c:chart"];
+    const chartEl = chartSpace.chart || chartSpace["c:chart"];
     if (!chartEl) return "\n\n[chart]\n\n";
 
     // Try to get chart title (NS-stripped: "t" instead of "a:t")
     let title = "";
-    const titleEl = chartEl["title"] || chartEl["c:title"];
+    const titleEl = chartEl.title || chartEl["c:title"];
     if (titleEl) {
       title = collectTextNsStripped(titleEl);
     }
 
     // Try to get plot area data
-    const plotArea = chartEl["plotArea"] || chartEl["c:plotArea"];
+    const plotArea = chartEl.plotArea || chartEl["c:plotArea"];
     if (!plotArea) return `\n\n### Chart${title ? `: ${title}` : ""}\n\n[chart data unavailable]\n`;
 
     // Find the chart type (bar, line, pie, etc.)
@@ -189,26 +187,26 @@ function extractChartData(chartXml: string): string {
     if (!plotData) return `\n\n### Chart${title ? `: ${title}` : ""}\n\n[unsupported chart]\n`;
 
     // Extract series
-    let seriesList = plotData["ser"] || plotData["c:ser"];
+    let seriesList = plotData.ser || plotData["c:ser"];
     if (!seriesList) return `\n\n### Chart${title ? `: ${title}` : ""}\n\n`;
     if (!Array.isArray(seriesList)) seriesList = [seriesList];
 
     // Extract category labels from the first series
     const categories: string[] = [];
     const firstSer = seriesList[0];
-    const cat = firstSer["cat"] || firstSer["c:cat"];
+    const cat = firstSer.cat || firstSer["c:cat"];
     if (cat) {
-      const strRef = cat["strRef"] || cat["c:strRef"];
-      const numRef = cat["numRef"] || cat["c:numRef"];
+      const strRef = cat.strRef || cat["c:strRef"];
+      const numRef = cat.numRef || cat["c:numRef"];
       const ref = strRef || numRef;
       if (ref) {
-        const cache = ref["strCache"] || ref["c:strCache"] || ref["numCache"] || ref["c:numCache"];
+        const cache = ref.strCache || ref["c:strCache"] || ref.numCache || ref["c:numCache"];
         if (cache) {
-          let pts = cache["pt"] || cache["c:pt"];
+          let pts = cache.pt || cache["c:pt"];
           if (pts) {
             if (!Array.isArray(pts)) pts = [pts];
             for (const pt of pts) {
-              categories.push(String(pt["v"] || pt["c:v"] || ""));
+              categories.push(String(pt.v || pt["c:v"] || ""));
             }
           }
         }
@@ -220,17 +218,17 @@ function extractChartData(chartXml: string): string {
     const seriesValues: number[][] = [];
     for (const ser of seriesList) {
       // Series name
-      const tx = ser["tx"] || ser["c:tx"];
+      const tx = ser.tx || ser["c:tx"];
       let name = "";
       if (tx) {
-        const sr = tx["strRef"] || tx["c:strRef"];
+        const sr = tx.strRef || tx["c:strRef"];
         if (sr) {
-          const sc = sr["strCache"] || sr["c:strCache"];
+          const sc = sr.strCache || sr["c:strCache"];
           if (sc) {
-            let pts = sc["pt"] || sc["c:pt"];
+            let pts = sc.pt || sc["c:pt"];
             if (pts) {
               if (!Array.isArray(pts)) pts = [pts];
-              name = String(pts[0]?.["v"] || pts[0]?.["c:v"] || "");
+              name = String(pts[0]?.v || pts[0]?.["c:v"] || "");
             }
           }
         }
@@ -241,18 +239,18 @@ function extractChartData(chartXml: string): string {
       seriesNames.push(name);
 
       // Series values
-      const val = ser["val"] || ser["c:val"];
+      const val = ser.val || ser["c:val"];
       const values: number[] = [];
       if (val) {
-        const nr = val["numRef"] || val["c:numRef"];
+        const nr = val.numRef || val["c:numRef"];
         if (nr) {
-          const nc = nr["numCache"] || nr["c:numCache"];
+          const nc = nr.numCache || nr["c:numCache"];
           if (nc) {
-            let pts = nc["pt"] || nc["c:pt"];
+            let pts = nc.pt || nc["c:pt"];
             if (pts) {
               if (!Array.isArray(pts)) pts = [pts];
               for (const pt of pts) {
-                values.push(Number(pt["v"] || pt["c:v"] || 0));
+                values.push(Number(pt.v || pt["c:v"] || 0));
               }
             }
           }
@@ -264,12 +262,12 @@ function extractChartData(chartXml: string): string {
     // Build markdown table
     let md = `\n\n### Chart${title ? `: ${title}` : ""}\n\n`;
     const header = ["Category", ...seriesNames];
-    md += "| " + header.join(" | ") + " |\n";
-    md += "|" + header.map(() => "---").join("|") + "|\n";
+    md += `| ${header.join(" | ")} |\n`;
+    md += `|${header.map(() => "---").join("|")}|\n`;
 
     for (let i = 0; i < categories.length; i++) {
-      const row = [categories[i], ...seriesValues.map(v => String(v[i] ?? ""))];
-      md += "| " + row.join(" | ") + " |\n";
+      const row = [categories[i], ...seriesValues.map((v) => String(v[i] ?? ""))];
+      md += `| ${row.join(" | ")} |\n`;
     }
 
     return md;
@@ -303,8 +301,8 @@ export const pptxConverter = converter(
     }
     // Sort slides by number
     slideFiles.sort((a, b) => {
-      const numA = parseInt(a.match(/slide(\d+)/)?.[1] ?? "0");
-      const numB = parseInt(b.match(/slide(\d+)/)?.[1] ?? "0");
+      const numA = parseInt(a.match(/slide(\d+)/)?.[1] ?? "0", 10);
+      const numB = parseInt(b.match(/slide(\d+)/)?.[1] ?? "0", 10);
       return numA - numB;
     });
 
@@ -339,9 +337,7 @@ export const pptxConverter = converter(
 
       // Graphic frames (tables, charts)
       if (spTree["p:graphicFrame"]) {
-        const gfs = Array.isArray(spTree["p:graphicFrame"])
-          ? spTree["p:graphicFrame"]
-          : [spTree["p:graphicFrame"]];
+        const gfs = Array.isArray(spTree["p:graphicFrame"]) ? spTree["p:graphicFrame"] : [spTree["p:graphicFrame"]];
         shapes.push(...gfs);
       }
 
@@ -363,9 +359,9 @@ export const pptxConverter = converter(
           const text = extractTextFromShape(shape);
           if (text.trim()) {
             if (isTitle(shape)) {
-              mdContent += "# " + text.trim() + "\n";
+              mdContent += `# ${text.trim()}\n`;
             } else {
-              mdContent += text + "\n";
+              mdContent += `${text}\n`;
             }
           }
         }
@@ -383,18 +379,18 @@ export const pptxConverter = converter(
             const chartRef = graphicData["@_uri"] === "http://schemas.openxmlformats.org/drawingml/2006/chart";
             if (chartRef || graphicData["c:chart"]) {
               // Read chart relationship
-              const slideRelsFile = slideFile.replace("slides/", "slides/_rels/") + ".rels";
+              const slideRelsFile = `${slideFile.replace("slides/", "slides/_rels/")}.rels`;
               const relsXml = await zip.file(slideRelsFile)?.async("string");
               if (relsXml) {
                 const relsParsed = parser.parse(relsXml);
-                const rels = relsParsed["Relationships"];
+                const rels = relsParsed.Relationships;
                 if (rels) {
-                  let relList = rels["Relationship"];
+                  let relList = rels.Relationship;
                   if (relList && !Array.isArray(relList)) relList = [relList];
                   if (relList) {
                     for (const rel of relList) {
                       if (rel["@_Type"]?.includes("/chart") && rel["@_Target"]) {
-                        const chartPath = "ppt/" + rel["@_Target"].replace("../", "");
+                        const chartPath = `ppt/${rel["@_Target"].replace("../", "")}`;
                         const chartXml = await zip.file(chartPath)?.async("string");
                         if (chartXml) {
                           mdContent += extractChartData(chartXml);
@@ -428,24 +424,29 @@ export const pptxConverter = converter(
               // Read the image and embed as data URI
               const rId = blip["@_r:embed"];
               if (rId) {
-                const slideRelsFile = slideFile.replace("slides/", "slides/_rels/") + ".rels";
+                const slideRelsFile = `${slideFile.replace("slides/", "slides/_rels/")}.rels`;
                 const relsXml = await zip.file(slideRelsFile)?.async("string");
                 if (relsXml) {
                   const relsParsed = parser.parse(relsXml);
-                  const rels = relsParsed["Relationships"];
+                  const rels = relsParsed.Relationships;
                   if (rels) {
-                    let relList = rels["Relationship"];
+                    let relList = rels.Relationship;
                     if (relList && !Array.isArray(relList)) relList = [relList];
                     if (relList) {
                       for (const rel of relList) {
                         if (rel["@_Id"] === rId && rel["@_Target"]) {
-                          const imgPath = "ppt/" + rel["@_Target"].replace("../", "");
+                          const imgPath = `ppt/${rel["@_Target"].replace("../", "")}`;
                           const imgData = await zip.file(imgPath)?.async("base64");
                           if (imgData) {
                             const ext = imgPath.split(".").pop()?.toLowerCase();
-                            const contentType = ext === "png" ? "image/png" :
-                                              ext === "gif" ? "image/gif" :
-                                              ext === "svg" ? "image/svg+xml" : "image/jpeg";
+                            const contentType =
+                              ext === "png"
+                                ? "image/png"
+                                : ext === "gif"
+                                  ? "image/gif"
+                                  : ext === "svg"
+                                    ? "image/svg+xml"
+                                    : "image/jpeg";
                             mdContent += `\n![${altText}](data:${contentType};base64,${imgData})\n`;
                           }
                         }
@@ -459,7 +460,7 @@ export const pptxConverter = converter(
               const nvPicPr = shape["p:nvPicPr"];
               let filename = "image.jpg";
               if (nvPicPr?.["p:cNvPr"]?.["@_name"]) {
-                filename = nvPicPr["p:cNvPr"]["@_name"].replace(/\W/g, "") + ".jpg";
+                filename = `${nvPicPr["p:cNvPr"]["@_name"].replace(/\W/g, "")}.jpg`;
               }
               mdContent += `\n![${altText}](${filename})\n`;
             }
@@ -487,7 +488,7 @@ export const pptxConverter = converter(
                   if (nvSpPr?.["p:nvPr"]?.["p:ph"]?.["@_type"] === "body") {
                     const text = extractTextFromShape(sp);
                     if (text.trim()) {
-                      mdContent += "\n\n### Notes:\n" + text.trim();
+                      mdContent += `\n\n### Notes:\n${text.trim()}`;
                     }
                   }
                 }

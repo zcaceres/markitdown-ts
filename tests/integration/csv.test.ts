@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import path from "node:path";
 import { createMarkItDown } from "../../src/markitdown";
 
@@ -7,10 +7,7 @@ const FIXTURES = path.join(import.meta.dir, "../fixtures");
 describe("CSV converter", () => {
   test("converts CSV with cp932 encoding", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "test_mskanji.csv"),
-      { streamInfo: { charset: "cp932" } },
-    );
+    const result = await md.convert(path.join(FIXTURES, "test_mskanji.csv"), { streamInfo: { charset: "cp932" } });
 
     expect(result.markdown).toContain("| 名前 | 年齢 | 住所 |");
     expect(result.markdown).toContain("| --- | --- | --- |");

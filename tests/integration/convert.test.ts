@@ -1,6 +1,6 @@
-import { describe, test, expect } from "bun:test";
-import path from "node:path";
+import { describe, expect, test } from "bun:test";
 import fs from "node:fs";
+import path from "node:path";
 import { createMarkItDown } from "../../src/markitdown";
 import { GENERAL_TEST_VECTORS } from "../test-vectors";
 
@@ -121,9 +121,7 @@ describe("convert edge cases", () => {
   test("throws UnsupportedFormatError for unknown format", async () => {
     const md = createMarkItDown();
     const buffer = Buffer.from([0x00, 0x01, 0x02, 0x03]);
-    await expect(
-      md.convert(buffer, { streamInfo: { extension: ".xyz" } }),
-    ).rejects.toThrow();
+    await expect(md.convert(buffer, { streamInfo: { extension: ".xyz" } })).rejects.toThrow();
   });
 
   test("converts data URI", async () => {
@@ -143,9 +141,7 @@ describe("convert edge cases", () => {
 
   test("throws UnsupportedFormatError for random.bin", async () => {
     const md = createMarkItDown();
-    await expect(
-      md.convert(path.join(FIXTURES, "random.bin")),
-    ).rejects.toThrow();
+    await expect(md.convert(path.join(FIXTURES, "random.bin"))).rejects.toThrow();
   });
 
   test("throws FileConversionError with attempt details for wrong extension", async () => {
@@ -155,8 +151,7 @@ describe("convert edge cases", () => {
       await md.convert(path.join(FIXTURES, "test.pdf"), {
         streamInfo: {
           extension: ".docx",
-          mimetype:
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          mimetype: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         },
       });
     } catch (e) {

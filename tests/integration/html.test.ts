@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import path from "node:path";
 import { createMarkItDown } from "../../src/markitdown";
 
@@ -7,22 +7,15 @@ const FIXTURES = path.join(import.meta.dir, "../fixtures");
 describe("HTML converter", () => {
   test("converts blog HTML", async () => {
     const md = createMarkItDown();
-    const result = await md.convert(
-      path.join(FIXTURES, "test_blog.html"),
-      {
-        streamInfo: {
-          charset: "utf-8",
-          url: "https://microsoft.github.io/autogen/blog/2023/04/21/LLM-tuning-math",
-        },
+    const result = await md.convert(path.join(FIXTURES, "test_blog.html"), {
+      streamInfo: {
+        charset: "utf-8",
+        url: "https://microsoft.github.io/autogen/blog/2023/04/21/LLM-tuning-math",
       },
-    );
+    });
 
-    expect(result.markdown).toContain(
-      "Large language models (LLMs) are powerful tools",
-    );
-    expect(result.markdown).toContain(
-      "an example where high cost can easily prevent a generic complex",
-    );
+    expect(result.markdown).toContain("Large language models (LLMs) are powerful tools");
+    expect(result.markdown).toContain("an example where high cost can easily prevent a generic complex");
   });
 
   test("converts HTML from buffer", async () => {

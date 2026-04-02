@@ -1,31 +1,27 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { StreamInfo, ConvertResult, ConvertOptions } from "./types.js";
 import type { Converter, ConverterContext } from "./converter.js";
-import { mergeStreamInfo, guessMimeFromExtension, guessExtensionFromMime } from "./stream-info.js";
-import { fileUriToPath, parseDataUri } from "./uri-utils.js";
-import {
-  FileConversionError,
-  UnsupportedFormatError,
-  type FailedConversionAttempt,
-} from "./exceptions.js";
-import { plainTextConverter } from "./converters/plain-text.js";
-import { csvConverter } from "./converters/csv.js";
-import { ipynbConverter } from "./converters/ipynb.js";
-import { htmlConverter } from "./converters/html.js";
-import { docxConverter } from "./converters/docx.js";
-import { xlsxConverter, xlsConverter } from "./converters/xlsx.js";
-import { pdfConverter } from "./converters/pdf.js";
-import { pptxConverter } from "./converters/pptx.js";
-import { wikipediaConverter } from "./converters/wikipedia.js";
-import { youtubeConverter } from "./converters/youtube.js";
-import { rssConverter } from "./converters/rss.js";
-import { bingSerpConverter } from "./converters/bing-serp.js";
-import { createZipConverter } from "./converters/zip.js";
-import { epubConverter } from "./converters/epub.js";
-import { imageConverter } from "./converters/image.js";
 import { audioConverter } from "./converters/audio.js";
+import { bingSerpConverter } from "./converters/bing-serp.js";
+import { csvConverter } from "./converters/csv.js";
+import { docxConverter } from "./converters/docx.js";
+import { epubConverter } from "./converters/epub.js";
+import { htmlConverter } from "./converters/html.js";
+import { imageConverter } from "./converters/image.js";
+import { ipynbConverter } from "./converters/ipynb.js";
 import { outlookMsgConverter } from "./converters/outlook-msg.js";
+import { pdfConverter } from "./converters/pdf.js";
+import { plainTextConverter } from "./converters/plain-text.js";
+import { pptxConverter } from "./converters/pptx.js";
+import { rssConverter } from "./converters/rss.js";
+import { wikipediaConverter } from "./converters/wikipedia.js";
+import { xlsConverter, xlsxConverter } from "./converters/xlsx.js";
+import { youtubeConverter } from "./converters/youtube.js";
+import { createZipConverter } from "./converters/zip.js";
+import { type FailedConversionAttempt, FileConversionError, UnsupportedFormatError } from "./exceptions.js";
+import { guessExtensionFromMime, guessMimeFromExtension, mergeStreamInfo } from "./stream-info.js";
+import type { ConvertOptions, ConvertResult, StreamInfo } from "./types.js";
+import { fileUriToPath, parseDataUri } from "./uri-utils.js";
 
 const PRIORITY_SPECIFIC = 0;
 const PRIORITY_GENERIC = 10;
@@ -77,10 +73,7 @@ export function createMarkItDown(options?: MarkItDownOptions) {
     return [...registrations].sort((a, b) => a.priority - b.priority);
   }
 
-  async function detectStreamInfo(
-    buffer: Buffer,
-    base: StreamInfo,
-  ): Promise<StreamInfo[]> {
+  async function detectStreamInfo(buffer: Buffer, base: StreamInfo): Promise<StreamInfo[]> {
     const guesses: StreamInfo[] = [];
 
     let enhanced = { ...base };
@@ -102,10 +95,9 @@ export function createMarkItDown(options?: MarkItDownOptions) {
       const { fileTypeFromBuffer } = await import("file-type");
       const detected = await fileTypeFromBuffer(buffer);
       if (detected) {
-        const detectedExt = "." + detected.ext;
+        const detectedExt = `.${detected.ext}`;
         const isCompatible =
-          (!base.mimetype || base.mimetype === detected.mime) &&
-          (!base.extension || base.extension === detectedExt);
+          (!base.mimetype || base.mimetype === detected.mime) && (!base.extension || base.extension === detectedExt);
 
         if (isCompatible) {
           guesses.push({
@@ -144,10 +136,7 @@ export function createMarkItDown(options?: MarkItDownOptions) {
     return { ...result, markdown: md };
   }
 
-  async function runConversion(
-    buffer: Buffer,
-    streamInfoGuesses: StreamInfo[],
-  ): Promise<ConvertResult> {
+  async function runConversion(buffer: Buffer, streamInfoGuesses: StreamInfo[]): Promise<ConvertResult> {
     const sorted = getSorted();
     const failedAttempts: FailedConversionAttempt[] = [];
 
@@ -221,10 +210,7 @@ export function createMarkItDown(options?: MarkItDownOptions) {
     }
   }
 
-  async function convertLocal(
-    filePath: string,
-    streamInfo?: StreamInfo,
-  ): Promise<ConvertResult> {
+  async function convertLocal(filePath: string, streamInfo?: StreamInfo): Promise<ConvertResult> {
     const ext = path.extname(filePath);
     const filename = path.basename(filePath);
 
@@ -240,18 +226,13 @@ export function createMarkItDown(options?: MarkItDownOptions) {
     return runConversion(buffer, guesses);
   }
 
-  async function convertUri(
-    uri: string,
-    streamInfo?: StreamInfo,
-  ): Promise<ConvertResult> {
+  async function convertUri(uri: string, streamInfo?: StreamInfo): Promise<ConvertResult> {
     uri = uri.trim();
 
     if (uri.startsWith("file:")) {
       const { netloc, path: localPath } = fileUriToPath(uri);
       if (netloc && netloc !== "localhost") {
-        throw new Error(
-          `Unsupported file URI: ${uri}. Netloc must be empty or localhost.`,
-        );
+        throw new Error(`Unsupported file URI: ${uri}. Netloc must be empty or localhost.`);
       }
       return convertLocal(localPath, streamInfo);
     }
@@ -271,19 +252,13 @@ export function createMarkItDown(options?: MarkItDownOptions) {
       return convertUrl(uri, streamInfo);
     }
 
-    throw new Error(
-      `Unsupported URI scheme: ${uri.split(":")[0]}. Supported: file, data, http, https`,
-    );
+    throw new Error(`Unsupported URI scheme: ${uri.split(":")[0]}. Supported: file, data, http, https`);
   }
 
-  async function convertUrl(
-    url: string,
-    streamInfo?: StreamInfo,
-  ): Promise<ConvertResult> {
+  async function convertUrl(url: string, streamInfo?: StreamInfo): Promise<ConvertResult> {
     const response = await fetch(url, {
       headers: {
-        Accept:
-          "text/markdown, text/html;q=0.9, text/plain;q=0.8, */*;q=0.1",
+        Accept: "text/markdown, text/html;q=0.9, text/plain;q=0.8, */*;q=0.1",
       },
     });
 

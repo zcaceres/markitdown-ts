@@ -1,16 +1,11 @@
-import { converter, anyOf, byMime, byExt } from "../converter.js";
 import * as XLSX from "xlsx";
+import { anyOf, byExt, byMime, converter } from "../converter.js";
 import { htmlToMarkdown } from "../transforms/html-to-markdown.js";
 
 const ACCEPTED_XLSX_EXTENSIONS = [".xlsx"];
-const ACCEPTED_XLSX_MIME_PREFIXES = [
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-];
+const ACCEPTED_XLSX_MIME_PREFIXES = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
 const ACCEPTED_XLS_EXTENSIONS = [".xls"];
-const ACCEPTED_XLS_MIME_PREFIXES = [
-  "application/vnd.ms-excel",
-  "application/excel",
-];
+const ACCEPTED_XLS_MIME_PREFIXES = ["application/vnd.ms-excel", "application/excel"];
 
 function sheetsToMarkdown(workbook: XLSX.WorkBook): string {
   const parts: string[] = [];
@@ -34,10 +29,7 @@ function sheetsToMarkdown(workbook: XLSX.WorkBook): string {
 
 export const xlsxConverter = converter(
   "XLSX",
-  anyOf(
-    byExt(...ACCEPTED_XLSX_EXTENSIONS),
-    byMime(...ACCEPTED_XLSX_MIME_PREFIXES),
-  ),
+  anyOf(byExt(...ACCEPTED_XLSX_EXTENSIONS), byMime(...ACCEPTED_XLSX_MIME_PREFIXES)),
   async (ctx) => {
     const workbook = XLSX.read(ctx.buffer, { type: "buffer" });
     return { markdown: sheetsToMarkdown(workbook) };
@@ -46,10 +38,7 @@ export const xlsxConverter = converter(
 
 export const xlsConverter = converter(
   "XLS",
-  anyOf(
-    byExt(...ACCEPTED_XLS_EXTENSIONS),
-    byMime(...ACCEPTED_XLS_MIME_PREFIXES),
-  ),
+  anyOf(byExt(...ACCEPTED_XLS_EXTENSIONS), byMime(...ACCEPTED_XLS_MIME_PREFIXES)),
   async (ctx) => {
     const workbook = XLSX.read(ctx.buffer, { type: "buffer" });
     return { markdown: sheetsToMarkdown(workbook) };

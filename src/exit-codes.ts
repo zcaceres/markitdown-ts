@@ -1,7 +1,4 @@
-import {
-  UnsupportedFormatError,
-  FileConversionError,
-} from "./exceptions.js";
+import { FileConversionError, UnsupportedFormatError } from "./exceptions.js";
 
 export const EXIT_SUCCESS = 0;
 export const EXIT_CONVERSION_FAILURE = 1;

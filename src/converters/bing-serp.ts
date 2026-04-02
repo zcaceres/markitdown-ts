@@ -1,7 +1,7 @@
-import { converter, allOf, anyOf, byMime, byExt, byUrl } from "../converter.js";
-import { decodeBuffer } from "../transforms/decode-text.js";
 import * as cheerio from "cheerio";
 import TurndownService from "turndown";
+import { allOf, anyOf, byExt, byMime, byUrl, converter } from "../converter.js";
+import { decodeBuffer } from "../transforms/decode-text.js";
 
 const ACCEPTED_EXTENSIONS = [".html", ".htm"];
 const ACCEPTED_MIME_PREFIXES = ["text/html", "application/xhtml"];
@@ -13,7 +13,7 @@ function decodeRedirectUrl(href: string): string {
     if (!u) return href;
 
     // Strip prefix (first 2 chars) and add padding
-    const encoded = u.slice(2).trim() + "==";
+    const encoded = `${u.slice(2).trim()}==`;
     // RFC 4648 URL-safe base64
     const normalized = encoded.replace(/-/g, "+").replace(/_/g, "/");
     const decoded = Buffer.from(normalized, "base64").toString("utf-8");
@@ -48,7 +48,7 @@ export const bingSerpConverter = converter(
     $(".tptt").each((_, el) => {
       const $el = $(el);
       const text = $el.text();
-      if (text) $el.text(text + " ");
+      if (text) $el.text(`${text} `);
     });
     $(".algoSlug_icon").remove();
 
@@ -93,7 +93,7 @@ export const bingSerpConverter = converter(
     $(".b_algo").each((_, el) => {
       const resultHtml = $(el).html();
       if (!resultHtml) return;
-      let mdResult = td.turndown(resultHtml).trim();
+      const mdResult = td.turndown(resultHtml).trim();
       const lines = mdResult
         .split(/\n+/)
         .map((l) => l.trim())
@@ -102,9 +102,7 @@ export const bingSerpConverter = converter(
     });
 
     const title = $("title").first().text() || undefined;
-    const markdown =
-      `## A Bing search for '${query}' found the following results:\n\n` +
-      results.join("\n\n");
+    const markdown = `## A Bing search for '${query}' found the following results:\n\n${results.join("\n\n")}`;
 
     return { markdown, title };
   },

@@ -1,19 +1,13 @@
 import path from "node:path";
 import type { Converter, ConverterContext } from "../converter.js";
-import { anyOf, byMime, byExt } from "../converter.js";
+import { anyOf, byExt, byMime } from "../converter.js";
+import { FileConversionError, UnsupportedFormatError } from "../exceptions.js";
 import type { ConvertResult, StreamInfo } from "../types.js";
-import {
-  UnsupportedFormatError,
-  FileConversionError,
-} from "../exceptions.js";
 
 const ACCEPTED_EXTENSIONS = [".zip"];
 const ACCEPTED_MIME_PREFIXES = ["application/zip"];
 
-const matcher = anyOf(
-  byExt(...ACCEPTED_EXTENSIONS),
-  byMime(...ACCEPTED_MIME_PREFIXES),
-);
+const matcher = anyOf(byExt(...ACCEPTED_EXTENSIONS), byMime(...ACCEPTED_MIME_PREFIXES));
 
 const MAX_ZIP_DEPTH = 10;
 
@@ -35,8 +29,7 @@ export function createZipConverter(convertFn: ConvertBufferFn): Converter {
       const JSZip = (await import("jszip")).default;
       const zip = await JSZip.loadAsync(ctx.buffer);
 
-      const filePath =
-        ctx.info.url || ctx.info.localPath || ctx.info.filename || "archive.zip";
+      const filePath = ctx.info.url || ctx.info.localPath || ctx.info.filename || "archive.zip";
       let md = `Content from the zip file \`${filePath}\`:\n\n`;
 
       for (const name of Object.keys(zip.files)) {
@@ -57,12 +50,9 @@ export function createZipConverter(convertFn: ConvertBufferFn): Converter {
           });
 
           md += `## File: ${name}\n\n`;
-          md += result.markdown + "\n\n";
+          md += `${result.markdown}\n\n`;
         } catch (e) {
-          if (
-            e instanceof UnsupportedFormatError ||
-            e instanceof FileConversionError
-          ) {
+          if (e instanceof UnsupportedFormatError || e instanceof FileConversionError) {
             // Skip files we can't convert
             continue;
           }

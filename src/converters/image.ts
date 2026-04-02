@@ -1,4 +1,4 @@
-import { converter, anyOf, byMime, byExt } from "../converter.js";
+import { anyOf, byExt, byMime, converter } from "../converter.js";
 import { exiftoolMetadata } from "./exiftool.js";
 
 const ACCEPTED_EXTENSIONS = [".jpg", ".jpeg", ".png"];
@@ -32,7 +32,7 @@ export const imageConverter = converter(
       }
     }
     if (metaLines.length) {
-      md += "# Image Metadata\n\n" + metaLines.join("\n") + "\n";
+      md += `# Image Metadata\n\n${metaLines.join("\n")}\n`;
     }
 
     // Optional LLM description
@@ -48,8 +48,7 @@ export const imageConverter = converter(
         "application/octet-stream";
       const base64Image = ctx.buffer.toString("base64");
       const dataUri = `data:${contentType};base64,${base64Image}`;
-      const prompt =
-        ctx.opts.llmPrompt?.trim() || "Write a detailed caption for this image.";
+      const prompt = ctx.opts.llmPrompt?.trim() || "Write a detailed caption for this image.";
 
       try {
         const response = await ctx.opts.llmClient.chat.completions.create({
@@ -66,7 +65,7 @@ export const imageConverter = converter(
         });
         const description = response.choices?.[0]?.message?.content;
         if (description) {
-          md += "\n# Description:\n" + description.trim() + "\n";
+          md += `\n# Description:\n${description.trim()}\n`;
         }
       } catch {
         // LLM call failed — continue without description

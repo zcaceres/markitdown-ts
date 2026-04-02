@@ -1,6 +1,6 @@
-import { converter, anyOf, byExt, byMime } from "../converter.js";
-import { decodeBuffer } from "../transforms/decode-text.js";
+import { anyOf, byExt, converter } from "../converter.js";
 import { FileConversionError } from "../exceptions.js";
+import { decodeBuffer } from "../transforms/decode-text.js";
 
 const ACCEPTED_EXTENSIONS = [".ipynb"];
 
@@ -62,9 +62,7 @@ export const ipynbConverter = converter(
 
       return { markdown: mdText, title };
     } catch (e) {
-      throw new FileConversionError(
-        `Error converting .ipynb file: ${e instanceof Error ? e.message : String(e)}`,
-      );
+      throw new FileConversionError(`Error converting .ipynb file: ${e instanceof Error ? e.message : String(e)}`);
     }
   },
 );

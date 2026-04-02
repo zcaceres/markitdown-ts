@@ -1,4 +1,4 @@
-import type { StreamInfo, ConvertResult, ConvertOptions } from "./types.js";
+import type { ConvertOptions, ConvertResult, StreamInfo } from "./types.js";
 
 export type ConverterContext = {
   buffer: Buffer;
@@ -61,10 +61,6 @@ export function hasCharset(): Matcher {
 /**
  * Create a converter from a name, matcher, and a conversion function.
  */
-export function converter(
-  name: string,
-  match: Matcher,
-  convert: TransformStep,
-): Converter {
+export function converter(name: string, match: Matcher, convert: TransformStep): Converter {
   return { name, match, convert };
 }
